@@ -2,7 +2,7 @@
 ## 🚀 Live Demo
 **[▶ Играть онлайн / Play Online](https://arcade-vault.netlify.app/)**
 <div align="center">
-
+  
 ![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![Vite](https://img.shields.io/badge/Vite-5-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-ES2023-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
