@@ -25,7 +25,7 @@ const T = {
       snake:    ["← → ↑ ↓ or WASD to move", "Eat food to grow", "Don't hit walls or yourself", "Speed increases as you grow"],
       flappy:   ["Click or SPACE to flap", "Don't touch the pipes", "Each pipe passed = +1 point", "Tap rhythm is key!"],
       memory:   ["Click cards to flip them", "Find all matching pairs", "Fewer moves = higher score", "You have 60 seconds!"],
-      reaction: ["Click the glowing target", "DON'T click too early!", "Faster reaction = more points", "8 rounds total"],
+      pong:   ["Move paddle with mouse/finger", "Ball speeds up over time", "Don't let ball pass your paddle!", "Bounce off walls for points"],
       tetris:   ["← → move  ↑ rotate", "↓ soft drop  SPACE hard drop", "Clear lines for big points", "Multiple lines = combo bonus"],
     },
     admin: {
@@ -41,10 +41,10 @@ const T = {
       snake: "Classic snake. Eat, grow, survive.",
       flappy: "Dodge the pillars. Don't crash.",
       memory: "Match the pairs. Train your brain.",
-      reaction: "Hit the target. Test your reflexes.",
+      pong: "Bounce the ball. Don't miss.",
       tetris: "Stack the blocks. Clear the lines.",
     },
-    gameNames: { snake: "SNAKE", flappy: "FLAPPY", memory: "MEMORY", reaction: "REFLEX", tetris: "TETRIS" },
+    gameNames: { snake: "SNAKE", flappy: "FLAPPY", memory: "MEMORY", pong: "PONG", tetris: "TETRIS" },
     profile: {
       title: "PLAYER PROFILE", editBio: "Write something about yourself...", saveBio: "SAVE", bioLabel: "BIO",
       statsTitle: "STATISTICS", totalScore: "TOTAL SCORE", gamesPlayed: "GAMES PLAYED",
@@ -61,7 +61,7 @@ const T = {
         snake_master: { name:"Snake Master",    desc:"Score 1000+ in Snake",           icon:"🐍" },
         tetris_god:   { name:"Tetris God",      desc:"Score 3000+ in Tetris",          icon:"🧩" },
         memory_ace:   { name:"Memory Ace",      desc:"Score 500+ in Memory",           icon:"🧠" },
-        speedster:    { name:"Speedster",       desc:"React under 200ms in Reflex",    icon:"💨" },
+        pong_ace:   { name:"Pong Ace",      desc:"Score 1000+ in Tennis",          icon:"🎾" },
       },
     },
   },
@@ -86,7 +86,7 @@ const T = {
       snake:    ["← → ↑ ↓ или WASD для движения", "Ешь еду — становись длиннее", "Не врезайся в стены и себя", "Скорость растёт с длиной"],
       flappy:   ["Клик или ПРОБЕЛ — взмах крыльями", "Не задевай трубы", "Каждая труба = +1 очко", "Ритм — залог успеха!"],
       memory:   ["Кликай на карточки чтобы открыть", "Найди все пары", "Меньше ходов = больше очков", "У тебя 60 секунд!"],
-      reaction: ["Кликай на светящуюся мишень", "НЕ кликай слишком рано!", "Быстрее реакция = больше очков", "Всего 8 раундов"],
+      pong:   ["Двигай ракетку мышью/пальцем", "Мяч ускоряется со временем", "Не пропусти мяч!", "Отбивай от стен для очков"],
       tetris:   ["← → двигать  ↑ повернуть", "↓ ускорить  ПРОБЕЛ — сбросить", "Заполняй линии для очков", "Несколько линий = бонус"],
     },
     admin: {
@@ -102,10 +102,10 @@ const T = {
       snake: "Классическая змейка. Ешь, расти, выживай.",
       flappy: "Уклоняйся от труб. Не разбейся.",
       memory: "Найди пары. Тренируй память.",
-      reaction: "Бей по цели. Проверь реакцию.",
+      pong: "Отбивай мяч. Не пропусти.",
       tetris: "Складывай блоки. Убирай линии.",
     },
-    gameNames: { snake: "ЗМЕЙКА", flappy: "ФЛАППИ", memory: "ПАМЯТЬ", reaction: "РЕФЛЕКС", tetris: "ТЕТРИС" },
+    gameNames: { snake: "ЗМЕЙКА", flappy: "ФЛАППИ", memory: "ПАМЯТЬ", pong: "ПОНГ", tetris: "ТЕТРИС" },
     profile: {
       title: "ПРОФИЛЬ ИГРОКА", editBio: "Напишите о себе...", saveBio: "СОХРАНИТЬ", bioLabel: "О СЕБЕ",
       statsTitle: "СТАТИСТИКА", totalScore: "ОБЩИЙ СЧЁТ", gamesPlayed: "ИГР СЫГРАНО",
@@ -122,7 +122,7 @@ const T = {
         snake_master: { name:"Мастер Змейки",   desc:"1000+ в Змейке",                   icon:"🐍" },
         tetris_god:   { name:"Бог Тетриса",     desc:"3000+ в Тетрисе",                  icon:"🧩" },
         memory_ace:   { name:"Память Слона",    desc:"500+ в Памяти",                    icon:"🧠" },
-        speedster:    { name:"Молния",          desc:"Реакция менее 200ms в Рефлексе",   icon:"💨" },
+        pong_ace:   { name:"Мастер Понга",       desc:"1000+ в Теннисе",                  icon:"🎾" },
       },
     },
   },
@@ -169,11 +169,11 @@ const GlobalStyles = () => (
 // SEED DATA
 // ═══════════════════════════════════════════════════════════════
 const SEED_SCORES = [
-  { name:"CYBER_ACE",  scores:{snake:1840,flappy:520,memory:1200,reaction:980,tetris:3200} },
-  { name:"NEON_WOLF",  scores:{snake:1420,flappy:380,memory:900, reaction:1100,tetris:2800} },
-  { name:"VOID_ZERO",  scores:{snake:980, flappy:290,memory:750, reaction:850, tetris:2100} },
-  { name:"GLITCH_X",   scores:{snake:760, flappy:210,memory:600, reaction:720, tetris:1600} },
-  { name:"GRID_RUNNER",scores:{snake:540, flappy:160,memory:480, reaction:590, tetris:1200} },
+  { name:"CYBER_ACE",  scores:{snake:1840,flappy:520,memory:1200,pong:980,tetris:3200} },
+  { name:"NEON_WOLF",  scores:{snake:1420,flappy:380,memory:900, pong:1100,tetris:2800} },
+  { name:"VOID_ZERO",  scores:{snake:980, flappy:290,memory:750, pong:850, tetris:2100} },
+  { name:"GLITCH_X",   scores:{snake:760, flappy:210,memory:600, pong:720, tetris:1600} },
+  { name:"GRID_RUNNER",scores:{snake:540, flappy:160,memory:480, pong:590, tetris:1200} },
 ];
 const SEED_USERS = [
   { username:"CYBER_ACE",  password:"ace123",   role:"user",  banned:false, totalGamesPlayed:42 },
@@ -187,7 +187,7 @@ const GAMES_META = [
   { id:"snake",    color:"var(--green)"   },
   { id:"flappy",   color:"var(--cyan)"    },
   { id:"memory",   color:"var(--magenta)" },
-  { id:"reaction", color:"var(--yellow)"  },
+  { id:"pong",   color:"var(--yellow)"  },
   { id:"tetris",   color:"var(--orange)"  },
 ];
 
@@ -275,26 +275,26 @@ const PIXEL_ICONS = {
     ]
   },
 
-  // ⚡ Reaction — lightning bolt
-  reaction: {
+  // 🎾 Tennis — racket
+  tennis: {
     size: 16,
-    palette: { a:'#ffe500', b:'#aa9900', c:'#ffffff', d:'#ff9900', e:'#fff8aa' },
+    palette: { a:'#ffe500', b:'#aa9900', c:'#ffffff', d:'#00f5ff', e:'#ffaa00' },
     rows: [
-      '........aaa.....',
-      '.......aaaa.....',
-      '......aaaaa.....',
-      '.....aaaaaa.....',
-      '....aaaaaaa.....',
-      '...aaaaaaaaa....',
-      '..aaaaaaaaaa....',
-      '.aaaaaaaaaaa....',
-      '....aaaaaaa.....',
-      '....aaaaaa......',
-      '....aaaaa.......',
-      '....aaaa........',
-      '....aaa.........',
-      '....aa..........',
-      '....a...........',
+      '......bbb.......',
+      '.....baaab......',
+      '....bacacab.....',
+      '....bacacab.....',
+      '.....baaab......',
+      '......bbb.......',
+      '.......ab.......',
+      '........ab......',
+      '.........ab.....',
+      '..........ab....',
+      '...........ab...',
+      '............b...',
+      '................',
+      '................',
+      '................',
       '................',
     ]
   },
@@ -966,14 +966,14 @@ function PixelIconAnimated({ id, size = 32, color, animate = false, glow = false
 // Map game ID → pixel icon ID
 const GAME_PIXEL_ICON = {
   snake: 'snake', flappy: 'flappy', memory: 'memory',
-  reaction: 'reaction', tetris: 'tetris',
+  pong: 'tennis', tetris: 'tetris',
 };
 // Map achievement key → pixel icon ID
 const ACH_PIXEL_ICON = {
   first_game: 'gamepad', score_1000: 'hundred', score_5000: 'fire',
   all_games: 'star', top3: 'trophy', ten_games: 'bolt',
   snake_master: 'snakeMaster', tetris_god: 'tetrisGod',
-  memory_ace: 'brainAce', speedster: 'speed',
+  memory_ace: 'brainAce', pong_ace: 'tennis',
 };
 // Avatar pixel icon list
 const AVATAR_PIXEL_IDS = ['robot','crown','skull','alien','ninja','dragon','wizard','knight','cat','ghost','fire2','gem','moon','target','heart','snake'];
@@ -1748,7 +1748,7 @@ function GameWrapper({gameId, user, lang, onBack, onSubmitScore}) {
         {gameId==="snake"    && <SnakeGame    key={gameKey} onEnd={handleGameEnd} active={finalScore===null} color={game.color} lang={lang}/>}
         {gameId==="flappy"   && <FlappyGame   key={gameKey} onEnd={handleGameEnd} active={finalScore===null} color={game.color} lang={lang}/>}
         {gameId==="memory"   && <MemoryGame   key={gameKey} onEnd={handleGameEnd} active={finalScore===null} color={game.color} lang={lang}/>}
-        {gameId==="reaction" && <ReactionGame key={gameKey} onEnd={handleGameEnd} active={finalScore===null} color={game.color} lang={lang}/>}
+        {gameId==="pong"   && <PongGame    key={gameKey} onEnd={handleGameEnd} active={finalScore===null} color={game.color} lang={lang}/>}
         {gameId==="tetris"   && <TetrisGame   key={gameKey} onEnd={handleGameEnd} active={finalScore===null} color={game.color} lang={lang}/>}
         <HintCorner gameId={gameId} lang={lang}/>
         {finalScore!==null && (
@@ -2413,190 +2413,232 @@ function MemoryGame({onEnd,active,color,lang}) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// REACTION GAME  — fixed stale closures + proper restart
+// TENNIS GAME  — bounce ball off walls, move paddle with mouse/touch
 // ═══════════════════════════════════════════════════════════════
-function ReactionGame({onEnd,active,color,lang}) {
-  const MAX=8, W=480, H=300;
-
-  const [phase,   setPhase]   = useState("intro");
-  const [target,  setTarget]  = useState(null);
-  const [rt,      setRt]      = useState(null);
-  const [history, setHistory] = useState([]);
-
-  const scoreRef  = useRef(0);
-  const roundRef  = useRef(0);
-  const timerRef  = useRef(null);
-  const fireRef   = useRef(null);
-  const phaseRef  = useRef("intro");
+function PongGame({onEnd, active, color, lang}) {
+  const canvasRef = useRef(null);
+  const stateRef  = useRef(null);
+  const animRef   = useRef(null);
+  const activeRef = useRef(active);
   const onEndRef  = useRef(onEnd);
+  useEffect(()=>{ activeRef.current=active; },[active]);
   useEffect(()=>{ onEndRef.current=onEnd; },[onEnd]);
-  useEffect(()=>{ phaseRef.current=phase; },[phase]);
-  useEffect(()=>()=>clearTimeout(timerRef.current), []);
 
-  const startRound = useCallback(()=>{
-    clearTimeout(timerRef.current);
-    setPhase("wait");
-    setTarget(null);
-    const delay = 1200 + Math.random()*2200;
-    timerRef.current = setTimeout(()=>{
-      const t = {
-        x: 60  + Math.random()*(W-120),
-        y: 40  + Math.random()*(H-80),
-        r: 22  + Math.random()*20,
-      };
-      setTarget(t);
-      setPhase("fire");
-      fireRef.current = Date.now();
-    }, delay);
-  },[]);
+  const W=480, H=360;
+  const COL = resolveCSSColor(color);
+  const PADDLE_W=90, PADDLE_H=12, BALL_R=9;
 
-  const handleClick = useCallback(e=>{
-    const ph = phaseRef.current;
+  const initState = () => ({
+    ball:    { x:W/2, y:H/2, vx: 3.5*(Math.random()>0.5?1:-1), vy:-3.5 },
+    paddle:  { x:W/2-PADDLE_W/2, y:H-40 },
+    score:   0,
+    lives:   3,
+    started: false,
+    over:    false,
+    combo:   0,       // consecutive hits
+    particles: [],    // hit particles
+    flashTimer: 0,
+  });
 
-    if(ph==="wait"){
-      clearTimeout(timerRef.current);
-      scoreRef.current = Math.max(0, scoreRef.current-100);
-      const nr = roundRef.current + 1;
-      roundRef.current = nr;
-      setHistory(h=>[...h,{miss:true}]);
-      if(nr>=MAX){
-        setPhase("gameover");
-        setTimeout(()=>onEndRef.current(scoreRef.current), 400);
-      } else {
-        setTimeout(startRound, 800);
+  useEffect(()=>{
+    stateRef.current = initState();
+    const canvas = canvasRef.current;
+    const ctx    = canvas.getContext("2d");
+
+    // ── input ──
+    const onMove = e => {
+      const s = stateRef.current;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = W / rect.width;
+      const cx = (e.clientX - rect.left) * scaleX;
+      s.paddle.x = clamp(cx - PADDLE_W/2, 0, W-PADDLE_W);
+      if (!s.started) s.started = true;
+    };
+    const onTouch = e => {
+      e.preventDefault();
+      const s = stateRef.current;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = W / rect.width;
+      const cx = (e.touches[0].clientX - rect.left) * scaleX;
+      s.paddle.x = clamp(cx - PADDLE_W/2, 0, W-PADDLE_W);
+      if (!s.started) s.started = true;
+    };
+    canvas.addEventListener("mousemove", onMove);
+    canvas.addEventListener("touchmove",  onTouch, {passive:false});
+    canvas.addEventListener("touchstart", onTouch, {passive:false});
+
+    // ── helpers ──
+    const spawnParticles = (x, y, col) => {
+      const s = stateRef.current;
+      for (let i=0; i<8; i++) {
+        const ang = Math.random()*Math.PI*2;
+        const spd = 2+Math.random()*3;
+        s.particles.push({ x, y, vx:Math.cos(ang)*spd, vy:Math.sin(ang)*spd, life:1, col });
       }
-      return;
-    }
+    };
 
-    if(ph!=="fire") return;
+    const drawBall = (b) => {
+      const g = ctx.createRadialGradient(b.x-BALL_R*0.3, b.y-BALL_R*0.3, 1, b.x, b.y, BALL_R);
+      g.addColorStop(0, "#ffffff");
+      g.addColorStop(0.4, COL);
+      g.addColorStop(1, shadeColor(COL,-50));
+      ctx.shadowColor = COL; ctx.shadowBlur = 16;
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(b.x, b.y, BALL_R, 0, Math.PI*2); ctx.fill();
+      ctx.shadowBlur = 0;
+    };
 
-    // Support both mouse (clientX) and touch events
-    const clientX = e.clientX ?? e.pageX;
-    const clientY = e.clientY ?? e.pageY;
-    const el = e.currentTarget ?? document.querySelector('[data-game="reflex"]');
-    const rect = el?.getBoundingClientRect?.() ?? {left:0, top:0};
-    const cx = clientX - rect.left;
-    const cy = clientY - rect.top;
+    const drawPaddle = (p, flash) => {
+      const pg = ctx.createLinearGradient(p.x, p.y, p.x+PADDLE_W, p.y+PADDLE_H);
+      pg.addColorStop(0, flash ? "#ffffff" : COL);
+      pg.addColorStop(0.5, flash ? COL : shadeColor(COL,30));
+      pg.addColorStop(1, flash ? "#ffffff" : COL);
+      ctx.shadowColor = COL; ctx.shadowBlur = flash ? 24 : 10;
+      ctx.fillStyle = pg;
+      ctx.beginPath();
+      ctx.roundRect(p.x, p.y, PADDLE_W, PADDLE_H, 6);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    };
 
-    setTarget(prev=>{
-      if(!prev) return prev;
-      if(Math.hypot(cx-prev.x, cy-prev.y) > prev.r+20) return prev;
-
-      const reaction = Date.now() - fireRef.current;
-      const pts = Math.max(10, Math.round(1000 - reaction*0.8));
-      scoreRef.current += pts;
-      const nr = roundRef.current + 1;
-      roundRef.current = nr;
-
-      setRt(reaction);
-      setHistory(h=>[...h,{rt:reaction,pts}]);
-      setPhase("result");
-
-      if(nr>=MAX){
-        setTimeout(()=>{ onEndRef.current(scoreRef.current); setPhase("gameover"); }, 900);
-      } else {
-        setTimeout(startRound, 900);
+    const drawLives = (lives) => {
+      for (let i=0; i<3; i++) {
+        const g2 = ctx.createRadialGradient(16+i*22, 20, 1, 16+i*22, 20, 7);
+        g2.addColorStop(0, i<lives ? "#ffffff" : "#333");
+        g2.addColorStop(1, i<lives ? COL : "#111");
+        ctx.fillStyle = g2;
+        ctx.shadowColor = i<lives ? COL : "transparent";
+        ctx.shadowBlur  = i<lives ? 8 : 0;
+        ctx.beginPath(); ctx.arc(16+i*22, 20, 7, 0, Math.PI*2); ctx.fill();
       }
-      return null;
-    });
-  },[startRound]);
+      ctx.shadowBlur = 0;
+    };
 
-  if(phase==="intro") return(
-    <div style={{height:H+60,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:14}}>
-      <PixelIconAnimated id="reaction" size={56} color={color} glow animate />
-      <NeonText color={color} size="1.1rem">{T[lang].gameNames.reaction}</NeonText>
-      <p style={{color:"var(--muted)",fontSize:"0.82rem",textAlign:"center"}}>{T[lang].gameDesc.reaction}</p>
-      <GlowButton color={color} onClick={()=>{ scoreRef.current=0; roundRef.current=0; setHistory([]); startRound(); }}>
-        {lang==="ru"?"НАЧАТЬ":"START"}
-      </GlowButton>
-    </div>
-  );
+    const drawWalls = () => {
+      // Top wall
+      const wg = ctx.createLinearGradient(0,0,W,0);
+      wg.addColorStop(0, COL+"40"); wg.addColorStop(0.5, COL+"80"); wg.addColorStop(1, COL+"40");
+      ctx.fillStyle = wg;
+      ctx.fillRect(0, 0, W, 6);
+      // Side walls
+      ctx.fillStyle = COL+"30";
+      ctx.fillRect(0, 0, 4, H);
+      ctx.fillRect(W-4, 0, 4, H);
+    };
 
-  const score = scoreRef.current;
-  const round = roundRef.current;
+    // ── tick ──
+    const tick = () => {
+      if (!activeRef.current) { animRef.current=requestAnimationFrame(tick); return; }
+      const s = stateRef.current;
 
-  return(
-    <div data-game="reflex" style={{position:"relative",width:"100%",height:H+40,cursor:"crosshair",userSelect:"none",touchAction:"manipulation"}}
-      onClick={handleClick}
-      onTouchEnd={e=>{ e.preventDefault(); handleClick(e.changedTouches[0]); }}>
-      {/* BG */}
-      <div style={{position:"absolute",inset:0,background:"#050515"}}/>
-      <svg style={{position:"absolute",inset:0,pointerEvents:"none"}} width="100%" height={H+40}>
-        {Array.from({length:8},(_,i)=>(
-          <line key={`v${i}`} x1={`${i*14.28}%`} y1="0" x2={`${i*14.28}%`} y2={H+40} stroke="rgba(255,255,255,0.04)"/>
-        ))}
-        {Array.from({length:6},(_,i)=>(
-          <line key={`h${i}`} x1="0" y1={(i*(H+40))/5} x2="100%" y2={(i*(H+40))/5} stroke="rgba(255,255,255,0.04)"/>
-        ))}
-      </svg>
+      if (s.started && !s.over) {
+        const b = s.ball;
+        const p = s.paddle;
 
-      {/* HUD */}
-      <div style={{position:"absolute",top:10,left:14,right:14,display:"flex",justifyContent:"space-between",zIndex:10,pointerEvents:"none"}}>
-        <span style={{fontFamily:"var(--font-hd)",fontSize:"0.72rem",color}}>{score}</span>
-        <span style={{fontFamily:"var(--font-hd)",fontSize:"0.72rem",color:"var(--muted)"}}>
-          {lang==="ru"?"РАУНД":"ROUND"} {Math.min(round+1,MAX)}/{MAX}
-        </span>
-      </div>
+        // Move ball
+        b.x += b.vx; b.y += b.vy;
 
-      {/* Center message */}
-      <div style={{position:"absolute",top:"45%",left:"50%",transform:"translate(-50%,-50%)",
-        textAlign:"center",pointerEvents:"none",zIndex:5,minWidth:200}}>
-        {phase==="wait" && (
-          <div style={{fontFamily:"var(--font-hd)",color:"var(--muted)",fontSize:"0.88rem",
-            animation:"glow-pulse 1s infinite"}}>
-            {lang==="ru"?"ЖДИТЕ ЦЕЛЬ...":"WAIT FOR TARGET..."}
-          </div>
-        )}
-        {phase==="result" && (
-          <div style={{animation:"pop-in 0.3s both",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <PixelIconAnimated id="bolt" size={22} color="var(--yellow)" glow />
-              <span style={{fontFamily:"var(--font-hd)",color:"var(--yellow)",fontSize:"1.1rem"}}>{rt}ms</span>
-            </div>
-            <div style={{fontFamily:"var(--font-hd)",color,fontSize:"0.72rem"}}>
-              +{history[history.length-1]?.pts??0}
-            </div>
-          </div>
-        )}
-        {phase==="wait" && history.some(h=>h.miss) && history[history.length-1]?.miss && (
-          <div style={{fontFamily:"var(--font-hd)",color:"var(--red)",fontSize:"0.7rem",marginTop:6}}>
-            {lang==="ru"?"Рано! -100":"Too early! -100"}
-          </div>
-        )}
-      </div>
+        // Wall bounces
+        if (b.x-BALL_R < 4)   { b.x=BALL_R+4;   b.vx=Math.abs(b.vx); }
+        if (b.x+BALL_R > W-4) { b.x=W-BALL_R-4; b.vx=-Math.abs(b.vx); }
+        if (b.y-BALL_R < 6)   { b.y=BALL_R+6;   b.vy=Math.abs(b.vy); spawnParticles(b.x,6,COL); }
 
-      {/* Target */}
-      {phase==="fire" && target && (
-        <div style={{
-          position:"absolute",
-          left: target.x - target.r,
-          top:  target.y - target.r,
-          width:  target.r*2,
-          height: target.r*2,
-          borderRadius:"50%",
-          background:`radial-gradient(circle,${color}ff 0%,${color}80 50%,transparent 100%)`,
-          boxShadow:`0 0 20px ${color},0 0 40px ${color}60`,
-          animation:"pop-in 0.15s both",
-          pointerEvents:"none",
-        }}>
-          <div style={{position:"absolute",inset:"25%",borderRadius:"50%",background:"rgba(255,255,255,0.9)"}}/>
-        </div>
-      )}
+        // Paddle collision
+        if (b.vy>0 &&
+            b.y+BALL_R >= p.y && b.y+BALL_R <= p.y+PADDLE_H+6 &&
+            b.x >= p.x-4 && b.x <= p.x+PADDLE_W+4) {
+          b.vy = -Math.abs(b.vy);
+          b.y  = p.y - BALL_R;
+          // Angle based on hit position
+          const rel = (b.x - (p.x + PADDLE_W/2)) / (PADDLE_W/2);
+          b.vx = rel * 5;
+          // Speed up every 5 hits
+          s.combo++;
+          const spd = 3.5 + Math.floor(s.combo/5)*0.4;
+          const mag = Math.hypot(b.vx, b.vy);
+          b.vx = b.vx/mag * spd; b.vy = -Math.abs(b.vy/mag * spd);
+          s.score += 10 + s.combo;
+          s.flashTimer = 6;
+          spawnParticles(b.x, p.y, COL);
+        }
 
-      {/* Round progress bar */}
-      <div style={{position:"absolute",bottom:8,left:14,right:14,display:"flex",gap:5,pointerEvents:"none"}}>
-        {Array.from({length:MAX},(_,i)=>{
-          const h=history[i];
-          return(
-            <div key={i} style={{flex:1,height:7,borderRadius:2,
-              background:h?(h.miss?"var(--red)":color):"var(--border)",
-              boxShadow:h&&!h.miss?`0 0 5px ${color}`:"none",
-              transition:"all 0.3s"}}/>
-          );
-        })}
-      </div>
-    </div>
-  );
+        // Miss
+        if (b.y > H+20) {
+          s.lives--;
+          s.combo = 0;
+          spawnParticles(b.x, H-10, "#ff3355");
+          if (s.lives<=0) { s.over=true; onEndRef.current(s.score); }
+          else {
+            b.x=W/2; b.y=H/2;
+            b.vx=3.5*(Math.random()>0.5?1:-1); b.vy=-3.5;
+          }
+        }
+
+        // Update particles
+        s.particles = s.particles.filter(pt=>pt.life>0);
+        s.particles.forEach(pt=>{ pt.x+=pt.vx; pt.y+=pt.vy; pt.vy+=0.15; pt.life-=0.06; });
+        if (s.flashTimer>0) s.flashTimer--;
+      }
+
+      // ── draw ──
+      ctx.fillStyle="#060612"; ctx.fillRect(0,0,W,H);
+
+      // Grid dots
+      ctx.fillStyle="rgba(255,255,255,0.025)";
+      for(let r=0;r<H;r+=24) for(let c=0;c<W;c+=24)
+        ctx.fillRect(c,r,1.5,1.5);
+
+      drawWalls();
+
+      // Particles
+      s.particles.forEach(pt=>{
+        ctx.globalAlpha = pt.life;
+        ctx.fillStyle = pt.col;
+        ctx.beginPath(); ctx.arc(pt.x, pt.y, 3, 0, Math.PI*2); ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+
+      drawBall(s.ball);
+      drawPaddle(s.paddle, s.flashTimer>0);
+      drawLives(s.lives);
+
+      // Score
+      ctx.fillStyle=COL; ctx.shadowColor=COL; ctx.shadowBlur=10;
+      ctx.font="bold 18px 'Orbitron'"; ctx.textAlign="center";
+      ctx.fillText(s.score, W/2, 28);
+      ctx.shadowBlur=0; ctx.textAlign="left";
+
+      // Combo
+      if (s.combo >= 3) {
+        ctx.fillStyle=COL; ctx.font="bold 11px 'Orbitron'"; ctx.textAlign="center";
+        ctx.fillText(`COMBO x${s.combo}`, W/2, 46);
+        ctx.textAlign="left";
+      }
+
+      if (!s.started) {
+        ctx.fillStyle="rgba(6,6,18,0.75)"; ctx.fillRect(0,0,W,H);
+        ctx.fillStyle=COL; ctx.shadowColor=COL; ctx.shadowBlur=16;
+        ctx.font="bold 15px 'Orbitron'"; ctx.textAlign="center";
+        ctx.fillText(lang==="ru"?"ДВИГАЙ МЫШЬЮ / ПАЛЬЦЕМ":"MOVE MOUSE / FINGER",W/2,H/2-8);
+        ctx.font="11px 'Orbitron'"; ctx.fillStyle="rgba(255,255,255,0.5)";
+        ctx.fillText(lang==="ru"?"чтобы начать":"to start",W/2,H/2+14);
+        ctx.shadowBlur=0; ctx.textAlign="left";
+      }
+
+      animRef.current = requestAnimationFrame(tick);
+    };
+
+    animRef.current = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(animRef.current);
+      canvas.removeEventListener("mousemove", onMove);
+      canvas.removeEventListener("touchmove",  onTouch);
+      canvas.removeEventListener("touchstart", onTouch);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} width={W} height={H}
+    style={{width:"100%", display:"block", cursor:"none", touchAction:"none"}}/>;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2794,7 +2836,7 @@ function computeAchievements(scores, userData, allScores) {
     snake_master: (sc.snake ?? 0) >= 1000,
     tetris_god:   (sc.tetris ?? 0) >= 3000,
     memory_ace:   (sc.memory ?? 0) >= 500,
-    speedster:    false, // awarded externally via fastest reaction
+    pong_ace:   (sc.pong ?? 0) >= 1000,
   };
 }
 
