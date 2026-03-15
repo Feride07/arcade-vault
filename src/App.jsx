@@ -1729,9 +1729,10 @@ function GameWrapper({gameId, user, lang, onBack, onSubmitScore}) {
   const game = GAMES_META.find(g=>g.id===gameId);
   const [finalScore, setFinalScore] = useState(null);
   const [submitted, setSubmitted] = useState(false);
+  const [gameKey, setGameKey] = useState(0); // increment to fully remount game
   const handleGameEnd = useCallback(score=>setFinalScore(score),[]);
   const handleSubmit = () => { if(!submitted&&finalScore!==null){onSubmitScore(gameId,finalScore);setSubmitted(true);}};
-  const handleRestart = () => { setFinalScore(null);setSubmitted(false); };
+  const handleRestart = () => { setFinalScore(null); setSubmitted(false); setGameKey(k=>k+1); };
 
   return (
     <div style={{maxWidth:680,margin:"0 auto",padding:"28px 20px"}}>
@@ -1744,11 +1745,11 @@ function GameWrapper({gameId, user, lang, onBack, onSubmitScore}) {
         </span>}
       </div>
       <Card color={`${game.color}40`} glow style={{padding:0,overflow:"hidden",position:"relative"}}>
-        {gameId==="snake"    && <SnakeGame    onEnd={handleGameEnd} active={finalScore===null} color={game.color} lang={lang}/>}
-        {gameId==="flappy"   && <FlappyGame   onEnd={handleGameEnd} active={finalScore===null} color={game.color} lang={lang}/>}
-        {gameId==="memory"   && <MemoryGame   onEnd={handleGameEnd} active={finalScore===null} color={game.color} lang={lang}/>}
-        {gameId==="reaction" && <ReactionGame onEnd={handleGameEnd} active={finalScore===null} color={game.color} lang={lang}/>}
-        {gameId==="tetris"   && <TetrisGame   onEnd={handleGameEnd} active={finalScore===null} color={game.color} lang={lang}/>}
+        {gameId==="snake"    && <SnakeGame    key={gameKey} onEnd={handleGameEnd} active={finalScore===null} color={game.color} lang={lang}/>}
+        {gameId==="flappy"   && <FlappyGame   key={gameKey} onEnd={handleGameEnd} active={finalScore===null} color={game.color} lang={lang}/>}
+        {gameId==="memory"   && <MemoryGame   key={gameKey} onEnd={handleGameEnd} active={finalScore===null} color={game.color} lang={lang}/>}
+        {gameId==="reaction" && <ReactionGame key={gameKey} onEnd={handleGameEnd} active={finalScore===null} color={game.color} lang={lang}/>}
+        {gameId==="tetris"   && <TetrisGame   key={gameKey} onEnd={handleGameEnd} active={finalScore===null} color={game.color} lang={lang}/>}
         <HintCorner gameId={gameId} lang={lang}/>
         {finalScore!==null && (
           <div style={{position:"absolute",inset:0,background:"rgba(6,6,18,0.93)",
@@ -2103,15 +2104,6 @@ function FlappyGame({onEnd, active, color, lang}) {
   useEffect(() => { activeRef.current = active; }, [active]);
   useEffect(() => { onEndRef.current = onEnd; },  [onEnd]);
 
-  // Reset game when active flips back to true (Play Again)
-  const prevActiveRef = useRef(active);
-  useEffect(() => {
-    if (active && !prevActiveRef.current) {
-      gameRef.current = newGame();
-    }
-    prevActiveRef.current = active;
-  }, [active]);
-
   const COL = resolveCSSColor(color);   // real hex color for canvas
   const W=480, H=360, PW=50, GAP=130, SPEED=2.8, GRAVITY=0.42, JUMP=-8;
 
@@ -2431,35 +2423,15 @@ function ReactionGame({onEnd,active,color,lang}) {
   const [rt,      setRt]      = useState(null);
   const [history, setHistory] = useState([]);
 
-  // Keep mutable game state in refs to avoid stale-closure hell
   const scoreRef  = useRef(0);
   const roundRef  = useRef(0);
   const timerRef  = useRef(null);
   const fireRef   = useRef(null);
-  const phaseRef  = useRef("intro");   // mirrors phase state
+  const phaseRef  = useRef("intro");
   const onEndRef  = useRef(onEnd);
   useEffect(()=>{ onEndRef.current=onEnd; },[onEnd]);
-
-  // Sync phaseRef whenever state changes
   useEffect(()=>{ phaseRef.current=phase; },[phase]);
-
-  // Reset everything (called on mount and on restart)
-  const resetGame = useCallback(()=>{
-    clearTimeout(timerRef.current);
-    scoreRef.current = 0;
-    roundRef.current = 0;
-    setPhase("intro");
-    setTarget(null);
-    setRt(null);
-    setHistory([]);
-  },[]);
-
-  // Reset when active flips back to true (player hit "Play Again")
-  const prevActive = useRef(active);
-  useEffect(()=>{
-    if(active && !prevActive.current) resetGame();
-    prevActive.current = active;
-  },[active, resetGame]);
+  useEffect(()=>()=>clearTimeout(timerRef.current), []);
 
   const startRound = useCallback(()=>{
     clearTimeout(timerRef.current);
@@ -2477,9 +2449,6 @@ function ReactionGame({onEnd,active,color,lang}) {
       fireRef.current = Date.now();
     }, delay);
   },[]);
-
-  // cleanup on unmount
-  useEffect(()=>()=>clearTimeout(timerRef.current), []);
 
   const handleClick = useCallback(e=>{
     const ph = phaseRef.current;
