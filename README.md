@@ -1,6 +1,5 @@
 # 🎮 ARCADE VAULT
-## 🚀 Live Demo
-**[▶ Играть онлайн / Play Online](https://arcade-vault.netlify.app/)**
+
 <div align="center">
 
 ![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)
@@ -98,7 +97,7 @@
     ┌────────┴────────────────────────────────────────┐
     │             ИГРОВЫЕ ДВИЖКИ (Games)               │
     │  SnakeGame · FlappyGame · MemoryGame             │
-    │  ReactionGame · TetrisGame                       │
+    │  PongGame · TetrisGame                       │
     └─────────────────────────────────────────────────┘
 ```
 
@@ -138,7 +137,7 @@ useEffect (mount once)
 | Модуль | Описание |
 |---|---|
 | 🔐 Аутентификация | Регистрация, вход, валидация, бан-проверка, ролевая модель |
-| 🎮 5 аркадных игр | Snake, Flappy Bird, Memory, Reflex, Tetris |
+| 🎮 5 аркадных игр | Snake, Flappy Bird, Memory, Pong, Tetris |
 | 🏆 Таблица рекордов | Фильтр по играм, прогресс-бар, топ-3 на главной |
 | 👤 Профиль игрока | Аватар, биография, XP/уровень, достижения, личные рекорды |
 | 🛡️ Админ-панель | Управление пользователями, статистика, рассылка сообщений |
@@ -283,19 +282,21 @@ arcade-vault/
 - Реализована на React (не Canvas): карточки — это DOM-элементы
 - Таймер через `setInterval` с очисткой в `useEffect` cleanup
 
-### ⚡ Reflex (Рефлекс)
+### 🏓 Pong
 
-**Механика:** тест скорости реакции — 8 раундов, нужно кликнуть по цели как можно быстрее.
+**Механика:** классический Pong — отбивай мяч ракеткой, не давай ему упасть вниз.
 
-- Цель появляется через случайную задержку (1.2–3.4 сек)
-- Ранний клик: штраф -100 очков
-- Подсчёт: `pts = max(10, 1000 − reaction_ms × 0.8)`
-- Цель: случайная позиция и размер
+- Управление: мышь (ПК) или палец (телефон) — просто двигаешь по горизонтали
+- 3 жизни — пропустил мяч вниз, теряешь жизнь
+- Мяч ускоряется каждые 5 ударов
+- Угол отскока зависит от места попадания по ракетке
+- Комбо: подряд идущие удары дают бонусные очки
 
 **Технические особенности:**
-- `scoreRef` и `roundRef` вместо `useState` — устраняет проблему устаревших замыканий (stale closures) в обработчиках
-- `phaseRef` зеркалирует `phase` state для синхронного чтения в `handleClick`
-- Сброс игры через отслеживание перехода `active: false → true`
+- Canvas API с `requestAnimationFrame` — физика мяча, частицы при ударе
+- Управление мышью через `mousemove` и тачем через `touchmove` на одном канвасе
+- Угол вылета: `vx = (hitPosition / paddleHalfWidth) * 5`
+- Скорость нормализуется: `speed = sqrt(vx²+vy²)`, затем масштабируется
 
 ### 🧩 Tetris
 
@@ -437,7 +438,7 @@ The application is a **monolithic SPA** with clear layer separation:
     ┌────────┴──────────────────────────────────────┐
     │              GAME ENGINES                      │
     │  SnakeGame · FlappyGame · MemoryGame           │
-    │  ReactionGame · TetrisGame                     │
+    │  PongGame · TetrisGame                     │
     └────────────────────────────────────────────────┘
 ```
 
@@ -448,7 +449,7 @@ The application is a **monolithic SPA** with clear layer separation:
 | Module | Description |
 |---|---|
 | 🔐 Authentication | Register, login, validation, ban check, role model |
-| 🎮 5 Arcade Games | Snake, Flappy Bird, Memory, Reflex, Tetris |
+| 🎮 5 Arcade Games | Snake, Flappy Bird, Memory, Pong, Tetris |
 | 🏆 Leaderboard | Per-game filter, progress bar, top-3 on home page |
 | 👤 Player Profile | Avatar, bio, XP/levels, achievements, personal records |
 | 🛡️ Admin Panel | User management, statistics, broadcast messages |
