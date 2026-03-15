@@ -158,6 +158,10 @@ const GlobalStyles = () => (
     @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
     @keyframes hint-slide{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
     @keyframes banner-in{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+    @media (max-width: 480px) {
+      .nav-label { display: none; }
+      .header-inner { gap: 6px !important; padding: 8px 10px !important; }
+    }
   `}</style>
 );
 
@@ -1360,14 +1364,15 @@ function Header({page, setPage, user, lang, setLang, onLogout, motd}) {
         </nav>
         {/* Lang toggle */}
         <button onClick={()=>setLang(l=>l==="en"?"ru":"en")} style={{
-          padding:"5px 12px",border:"1px solid var(--border)",borderRadius:4,
+          padding:"8px 14px",border:"1px solid var(--border)",borderRadius:4,
           background:"var(--bg2)",color:"var(--text)",fontFamily:"var(--font-hd)",
           fontSize:"0.68rem",fontWeight:700,cursor:"pointer",transition:"all 0.2s",
-          letterSpacing:"0.05em"
+          letterSpacing:"0.05em", minWidth:56, minHeight:36, touchAction:"manipulation",
+          WebkitTapHighlightColor:"transparent"
         }}
           onMouseEnter={e=>e.currentTarget.style.borderColor="var(--cyan)"}
           onMouseLeave={e=>e.currentTarget.style.borderColor="var(--border)"}
-        >{lang==="en"?"🇷🇺 RU":"🇺🇸 EN"}</button>
+        >{lang==="en"?"RU":"EN"}</button>
         {user && (
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{width:8,height:8,borderRadius:"50%",
@@ -2047,20 +2052,29 @@ function SnakeGame({onEnd, active, color, lang}) {
     return () => { cancelAnimationFrame(animRef.current); window.removeEventListener("keydown",onKey); };
   }, []);
 
-  const ts = useRef(null);
-  return <canvas ref={canvasRef} width={W} height={H} style={{width:"100%",touchAction:"none"}}
-    onTouchStart={e=>{ts.current={x:e.touches[0].clientX,y:e.touches[0].clientY};}}
+  const tsRef = useRef(null);
+  return <canvas ref={canvasRef} width={W} height={H}
+    style={{width:"100%", touchAction:"none", display:"block"}}
+    onTouchStart={e=>{
+      e.preventDefault();
+      tsRef.current={x:e.touches[0].clientX, y:e.touches[0].clientY};
+      const s=stateRef.current; if(!s.started) s.started=true;
+    }}
     onTouchEnd={e=>{
-      if(!ts.current)return;
-      const dx=e.changedTouches[0].clientX-ts.current.x, dy=e.changedTouches[0].clientY-ts.current.y;
-      const s=stateRef.current; if(!s.started)s.started=true;
+      e.preventDefault();
+      if(!tsRef.current) return;
+      const dx=e.changedTouches[0].clientX-tsRef.current.x;
+      const dy=e.changedTouches[0].clientY-tsRef.current.y;
+      const s=stateRef.current;
+      if(Math.abs(dx)<10 && Math.abs(dy)<10) return; // tap — ignore
       if(Math.abs(dx)>Math.abs(dy)){
-        if(dx>20&&s.dir.x!==-1)s.nextDir={x:1,y:0};
-        if(dx<-20&&s.dir.x!==1)s.nextDir={x:-1,y:0};
+        if(dx>0 && s.dir.x!==-1) s.nextDir={x:1,y:0};
+        if(dx<0 && s.dir.x!==1)  s.nextDir={x:-1,y:0};
       } else {
-        if(dy>20&&s.dir.y!==-1)s.nextDir={x:0,y:1};
-        if(dy<-20&&s.dir.y!==1)s.nextDir={x:0,y:-1};
+        if(dy>0 && s.dir.y!==-1) s.nextDir={x:0,y:1};
+        if(dy<0 && s.dir.y!==1)  s.nextDir={x:0,y:-1};
       }
+      tsRef.current=null;
     }}/>;
 }
 
@@ -2088,6 +2102,15 @@ function FlappyGame({onEnd, active, color, lang}) {
 
   useEffect(() => { activeRef.current = active; }, [active]);
   useEffect(() => { onEndRef.current = onEnd; },  [onEnd]);
+
+  // Reset game when active flips back to true (Play Again)
+  const prevActiveRef = useRef(active);
+  useEffect(() => {
+    if (active && !prevActiveRef.current) {
+      gameRef.current = newGame();
+    }
+    prevActiveRef.current = active;
+  }, [active]);
 
   const COL = resolveCSSColor(color);   // real hex color for canvas
   const W=480, H=360, PW=50, GAP=130, SPEED=2.8, GRAVITY=0.42, JUMP=-8;
@@ -2462,7 +2485,6 @@ function ReactionGame({onEnd,active,color,lang}) {
     const ph = phaseRef.current;
 
     if(ph==="wait"){
-      // Early click — penalty
       clearTimeout(timerRef.current);
       scoreRef.current = Math.max(0, scoreRef.current-100);
       const nr = roundRef.current + 1;
@@ -2479,13 +2501,17 @@ function ReactionGame({onEnd,active,color,lang}) {
 
     if(ph!=="fire") return;
 
-    // Check if click landed on target
-    const rect = e.currentTarget.getBoundingClientRect();
-    const cx   = e.clientX - rect.left;
-    const cy   = e.clientY - rect.top;
+    // Support both mouse (clientX) and touch events
+    const clientX = e.clientX ?? e.pageX;
+    const clientY = e.clientY ?? e.pageY;
+    const el = e.currentTarget ?? document.querySelector('[data-game="reflex"]');
+    const rect = el?.getBoundingClientRect?.() ?? {left:0, top:0};
+    const cx = clientX - rect.left;
+    const cy = clientY - rect.top;
+
     setTarget(prev=>{
       if(!prev) return prev;
-      if(Math.hypot(cx-prev.x, cy-prev.y) > prev.r+12) return prev; // miss — ignore
+      if(Math.hypot(cx-prev.x, cy-prev.y) > prev.r+20) return prev;
 
       const reaction = Date.now() - fireRef.current;
       const pts = Math.max(10, Math.round(1000 - reaction*0.8));
@@ -2521,8 +2547,9 @@ function ReactionGame({onEnd,active,color,lang}) {
   const round = roundRef.current;
 
   return(
-    <div style={{position:"relative",width:"100%",height:H+40,cursor:"crosshair",userSelect:"none"}}
-      onClick={handleClick}>
+    <div data-game="reflex" style={{position:"relative",width:"100%",height:H+40,cursor:"crosshair",userSelect:"none",touchAction:"manipulation"}}
+      onClick={handleClick}
+      onTouchEnd={e=>{ e.preventDefault(); handleClick(e.changedTouches[0]); }}>
       {/* BG */}
       <div style={{position:"absolute",inset:0,background:"#050515"}}/>
       <svg style={{position:"absolute",inset:0,pointerEvents:"none"}} width="100%" height={H+40}>
@@ -2682,7 +2709,92 @@ function TetrisGame({onEnd,active,color,lang}) {
     animRef.current=requestAnimationFrame(tick);
     return()=>{cancelAnimationFrame(animRef.current);window.removeEventListener("keydown",onKey);};
   },[active]);
-  return <canvas ref={canvasRef} width={W} height={H} style={{width:"100%"}}/>;
+
+  // Touch controls for Tetris
+  const touchRef = useRef(null);
+  const lastTapRef = useRef(0);
+
+  const handleTouchStart = e => {
+    const t = e.touches[0];
+    touchRef.current = { x: t.clientX, y: t.clientY, time: Date.now() };
+  };
+  const handleTouchEnd = e => {
+    if (!touchRef.current) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchRef.current.x;
+    const dy = t.clientY - touchRef.current.y;
+    const dt = Date.now() - touchRef.current.time;
+    const s = stateRef.current;
+    if (!s.started) { s.started = true; return; }
+    if (s.dead) return;
+
+    // Double tap = hard drop
+    const now = Date.now();
+    if (dt < 200 && Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+      if (now - lastTapRef.current < 300) {
+        // hard drop
+        while(vld(s.current.cells.map(([x,y])=>[x,y+1]),s.board)){s.current.cells=s.current.cells.map(([x,y])=>[x,y+1]);s.score+=2;}
+        lock(s);
+        lastTapRef.current = 0;
+        return;
+      }
+      lastTapRef.current = now;
+      // single tap = rotate
+      const r = rot(s.current.cells);
+      if (vld(r, s.board)) s.current.cells = r;
+      return;
+    }
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+      // horizontal swipe
+      if (dx > 20) { const m=s.current.cells.map(([x,y])=>[x+1,y]); if(vld(m,s.board))s.current.cells=m; }
+      else if (dx < -20) { const m=s.current.cells.map(([x,y])=>[x-1,y]); if(vld(m,s.board))s.current.cells=m; }
+    } else {
+      // swipe down = soft drop
+      if (dy > 20) { const m=s.current.cells.map(([x,y])=>[x,y+1]); if(vld(m,s.board)){s.current.cells=m;s.score+=1;} }
+    }
+  };
+
+  const doAction = (action) => {
+    const s = stateRef.current;
+    if (!s) return;
+    if (!s.started) { s.started = true; }
+    if (s.dead) return;
+    if (action==="left")  { const m=s.current.cells.map(([x,y])=>[x-1,y]); if(vld(m,s.board))s.current.cells=m; }
+    if (action==="right") { const m=s.current.cells.map(([x,y])=>[x+1,y]); if(vld(m,s.board))s.current.cells=m; }
+    if (action==="down")  { const m=s.current.cells.map(([x,y])=>[x,y+1]); if(vld(m,s.board)){s.current.cells=m;s.score+=1;} }
+    if (action==="rot")   { const r=rot(s.current.cells); if(vld(r,s.board))s.current.cells=r; }
+    if (action==="drop")  { while(vld(s.current.cells.map(([x,y])=>[x,y+1]),s.board)){s.current.cells=s.current.cells.map(([x,y])=>[x,y+1]);s.score+=2;} lock(s); }
+  };
+
+  const btnStyle = (bg) => ({
+    background: bg+"33", border:`1px solid ${bg}60`, borderRadius:8,
+    color: bg, fontFamily:"var(--font-hd)", fontSize:"1.2rem", fontWeight:900,
+    padding:"14px 0", flex:1, cursor:"pointer", touchAction:"manipulation",
+    WebkitTapHighlightColor:"transparent", userSelect:"none",
+  });
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
+      <canvas ref={canvasRef} width={W} height={H} style={{width:"100%",maxWidth:300,display:"block"}}
+        onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}/>
+      {/* Mobile controls */}
+      <div style={{width:"100%",maxWidth:300,padding:"8px 8px 4px",display:"flex",flexDirection:"column",gap:6}}>
+        <div style={{display:"flex",gap:6}}>
+          <button style={btnStyle(color)} onTouchStart={e=>{e.preventDefault();doAction("left");}} onClick={()=>doAction("left")}>◄</button>
+          <button style={btnStyle("#ff00aa")} onTouchStart={e=>{e.preventDefault();doAction("rot");}} onClick={()=>doAction("rot")}>↻</button>
+          <button style={btnStyle(color)} onTouchStart={e=>{e.preventDefault();doAction("right");}} onClick={()=>doAction("right")}>►</button>
+        </div>
+        <div style={{display:"flex",gap:6}}>
+          <button style={{...btnStyle("#ff6b00"),flex:2}} onTouchStart={e=>{e.preventDefault();doAction("down");}} onClick={()=>doAction("down")}>▼</button>
+          <button style={{...btnStyle("#ffe500"),flex:1}} onTouchStart={e=>{e.preventDefault();doAction("drop");}} onClick={()=>doAction("drop")}>⬇</button>
+        </div>
+        <div style={{textAlign:"center",fontFamily:"var(--font-hd)",fontSize:"0.52rem",color:"var(--muted)"}}>
+          {lang==="ru"?"◄► движение  ↻ поворот  ▼ вниз  ⬇ сброс":"◄► move  ↻ rotate  ▼ soft  ⬇ drop"}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ═══════════════════════════════════════════════════════════════
