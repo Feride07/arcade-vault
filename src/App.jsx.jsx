@@ -1255,49 +1255,65 @@ function LiquidEtherBG() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// AUTH PAGE
+// AUTH PAGE — подключена к API
 // ═══════════════════════════════════════════════════════════════
-function AuthPage({lang, users, onLogin, onRegister}) {
+const API = 'http://localhost:3001';
+
+function AuthPage({lang, onLogin, onRegister}) {
   const t = T[lang].auth;
-  const [mode, setMode] = useState("login");
+  const [mode, setMode]         = useState("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [error, setError] = useState("");
+  const [confirm, setConfirm]   = useState("");
+  const [error, setError]       = useState("");
+  const [loading, setLoading]   = useState(false);
 
-  const handleLogin = () => {
-    setError("");
-    const u = users.find(u => u.username === username.toUpperCase() && u.password === password);
-    if (!u) { setError(t.error.badLogin); return; }
-    if (u.banned) { setError(lang==="ru"?"Ваш аккаунт заблокирован.":"Account is banned."); return; }
-    onLogin(u);
+  const handleLogin = async () => {
+    setError(""); setLoading(true);
+    try {
+      const res  = await fetch(`${API}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username.toUpperCase(), password })
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || t.error.badLogin); return; }
+      onLogin(data.user, data.token);
+    } catch { setError(lang==="ru"?"Сервер недоступен. Запусти backend.":"Server unavailable. Start backend."); }
+    finally { setLoading(false); }
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     setError("");
-    if (username.length < 3) { setError(t.error.shortUser); return; }
-    if (password.length < 6) { setError(t.error.shortPass); return; }
-    if (password !== confirm) { setError(t.error.passMismatch); return; }
+    if (username.length < 3)   { setError(t.error.shortUser);     return; }
+    if (password.length < 6)   { setError(t.error.shortPass);     return; }
+    if (password !== confirm)  { setError(t.error.passMismatch);  return; }
     if (username.toLowerCase() === "admin") { setError(t.error.adminForbidden); return; }
-    if (users.find(u => u.username === username.toUpperCase())) { setError(t.error.takenName); return; }
-    onRegister({ username: username.toUpperCase(), password, role:"user", banned:false, totalGamesPlayed:0 });
+    setLoading(true);
+    try {
+      const res  = await fetch(`${API}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username.toUpperCase(), password })
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || t.error.takenName); return; }
+      onRegister(data.user, data.token);
+    } catch { setError(lang==="ru"?"Сервер недоступен. Запусти backend.":"Server unavailable. Start backend."); }
+    finally { setLoading(false); }
   };
 
   return (
     <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:"20px",
       background:"#06060f", position:"relative", overflow:"hidden"}}>
-      {/* Liquid Ether WebGL background */}
       <LiquidEtherBG />
-      {/* Frosted glass overlay to slightly dim the bg behind the card */}
       <div style={{position:"absolute",inset:0,background:"rgba(6,6,18,0.28)",zIndex:1,pointerEvents:"none"}}/>
       <div style={{width:"100%",maxWidth:400,animation:"pop-in 0.4s both",position:"relative",zIndex:2}}>
-        {/* Logo */}
         <div style={{textAlign:"center",marginBottom:36}}>
           <NeonText color="var(--cyan)" size="2rem" pulse>◈ {T[lang].appName}</NeonText>
           <div style={{color:"var(--muted)",fontSize:"0.8rem",marginTop:8,letterSpacing:"0.2em"}}>{t.tagline}</div>
         </div>
         <Card color="var(--cyan)40" glow style={{padding:"28px 32px"}}>
-          {/* Tabs */}
           <div style={{display:"flex",gap:4,marginBottom:24,background:"var(--bg2)",borderRadius:4,padding:3}}>
             {["login","register"].map(m=>(
               <button key={m} onClick={()=>{setMode(m);setError("");}} style={{
@@ -1314,10 +1330,9 @@ function AuthPage({lang, users, onLogin, onRegister}) {
           {mode==="register" && <Input label={t.confirmPassword} type="password" value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="••••••" />}
           {error && <div style={{color:"var(--red)",fontSize:"0.72rem",fontFamily:"var(--font-hd)",marginBottom:12,
             background:"var(--red)10",border:"1px solid var(--red)40",borderRadius:4,padding:"8px 12px",animation:"shake 0.4s"}}>{error}</div>}
-          <GlowButton full color="var(--cyan)"
-            onClick={mode==="login"?handleLogin:handleRegister}
-            style={{marginTop:4}}>
-            {mode==="login"?t.loginBtn:t.registerBtn}
+          <GlowButton full color="var(--cyan)" onClick={mode==="login"?handleLogin:handleRegister}
+            disabled={loading} style={{marginTop:4}}>
+            {loading?(lang==="ru"?"ЗАГРУЗКА...":"LOADING..."):(mode==="login"?t.loginBtn:t.registerBtn)}
           </GlowButton>
         </Card>
       </div>
@@ -1556,7 +1571,7 @@ function LeaderboardPage({lang, scores, user}) {
 // ═══════════════════════════════════════════════════════════════
 // ADMIN PANEL
 // ═══════════════════════════════════════════════════════════════
-function AdminPanel({lang, users, setUsers, scores, setScores, motd, setMotd}) {
+function AdminPanel({lang, users, setUsers, scores, setScores, motd, setMotd, token, api, reloadUsers}) {
   const t = T[lang].admin;
   const [tab, setTab] = useState("users");
   const [announce, setAnnounce] = useState("");
@@ -1566,8 +1581,31 @@ function AdminPanel({lang, users, setUsers, scores, setScores, motd, setMotd}) {
   const totalGames = normalUsers.reduce((a,u)=>a+(u.totalGamesPlayed??0),0);
   const topScore = Math.max(0,...scores.map(s=>computeTotal(s.scores)));
 
-  const handleBan = (username) => setUsers(prev=>prev.map(u=>u.username===username?{...u,banned:!u.banned}:u));
-  const handleResetScore = (username) => setScores(prev=>prev.map(s=>s.name===username?{...s,scores:{}}:s));
+  const handleBan = async (username) => {
+    const u = users.find(u=>u.username===username);
+    if (!u) return;
+    try {
+      await fetch(`${api || API}/api/admin/users/${u.id}/ban`, {
+        method: 'PATCH',
+        headers: { 'Content-Type':'application/json', Authorization:`Bearer ${token}` },
+        body: JSON.stringify({ is_banned: !u.banned })
+      });
+      if (reloadUsers) await reloadUsers();
+    } catch(e) { console.error(e); }
+  };
+
+  const handleResetScore = async (username) => {
+    const u = users.find(u=>u.username===username);
+    if (!u) return;
+    try {
+      await fetch(`${api || API}/api/admin/users/${u.id}/scores`, {
+        method: 'DELETE',
+        headers: { Authorization:`Bearer ${token}` }
+      });
+      if (reloadUsers) await reloadUsers();
+      setScores(prev=>prev.map(s=>s.name===username?{...s,scores:{}}:s));
+    } catch(e) { console.error(e); }
+  };
   const handleAnnounce = () => { if(announce.trim()){setMotd(announce.trim());setAnnounceSent(true);setTimeout(()=>setAnnounceSent(false),3000);} };
 
   const tabs=[{id:"users",label:t.users},{id:"stats",label:t.stats},{id:"manage",label:t.manage}];
@@ -1711,7 +1749,13 @@ function AdminPanel({lang, users, setUsers, scores, setScores, motd, setMotd}) {
             <p style={{color:"var(--muted)",fontSize:"0.82rem",marginBottom:14}}>
               {lang==="ru"?"Это действие обнулит все очки всех игроков. Необратимо!":"This will wipe all player scores. Irreversible!"}
             </p>
-            <GlowButton danger onClick={()=>setScores(SEED_SCORES.map(s=>({...s,scores:{}})))}>
+            <GlowButton danger onClick={async()=>{
+              try {
+                await fetch(`${api||API}/api/admin/scores`,{method:'DELETE',headers:{Authorization:`Bearer ${token}`}});
+                if(reloadUsers) await reloadUsers();
+                setScores(prev=>prev.map(s=>({...s,scores:{}})));
+              } catch(e){console.error(e);}
+            }}>
               {lang==="ru"?"⚠ СБРОСИТЬ ВСЁ":"⚠ WIPE ALL SCORES"}
             </GlowButton>
           </Card>
@@ -2840,7 +2884,7 @@ function computeAchievements(scores, userData, allScores) {
   };
 }
 
-function ProfilePage({ lang, user, users, scores, setUsers, onPlayGame }) {
+function ProfilePage({ lang, user, users, scores, setUsers, onPlayGame, token, api }) {
   const t = T[lang].profile;
   const tp = T[lang];
   const userData = users.find(u => u.username === user.username);
@@ -2869,7 +2913,18 @@ function ProfilePage({ lang, user, users, scores, setUsers, onPlayGame }) {
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [tab, setTab] = useState("stats");
 
-  const saveProfile = (newBio, newAvatar, newAvatarColor) => {
+  const saveProfile = async (newBio, newAvatar, newAvatarColor) => {
+    try {
+      await fetch(`${api || API}/api/profile`, {
+        method: 'PATCH',
+        headers: { 'Content-Type':'application/json', Authorization:`Bearer ${token}` },
+        body: JSON.stringify({
+          bio:          newBio          ?? bio,
+          avatar_id:    newAvatar       ?? avatar,
+          avatar_color: newAvatarColor  ?? avatarColor,
+        })
+      });
+    } catch(e) { console.error(e); }
     setUsers(prev => prev.map(u =>
       u.username === user.username
         ? { ...u, bio: newBio ?? bio, avatar: newAvatar ?? avatar, avatarColor: newAvatarColor ?? avatarColor }
@@ -3241,55 +3296,119 @@ function ProfilePage({ lang, user, users, scores, setUsers, onPlayGame }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ROOT APP
+// ROOT APP — подключён к backend API (localhost:3001)
 // ═══════════════════════════════════════════════════════════════
-export default function App() {
-  const [lang, setLang] = useState("ru");
-  const [page, setPage] = useState("home");
-  const [playingGame, setPlayingGame] = useState(null);
-  const [user, setUser] = useState(null);
-  const [users, setUsers] = useState([
-    { username:"ADMIN", password:"admin2024", role:"admin", banned:false, totalGamesPlayed:0 },
-    ...SEED_USERS
-  ]);
-  const [scores, setScores] = useState(SEED_SCORES);
-  const [motd, setMotd] = useState("");
 
-  const handleLogin = (u) => { setUser(u); setPage("home"); };
-  const handleRegister = (newUser) => {
-    setUsers(prev=>[...prev,newUser]);
-    setScores(prev=>[...prev,{name:newUser.username,scores:{}}]);
-    setUser(newUser);setPage("home");
+export default function App() {
+  const [lang, setLang]               = useState("ru");
+  const [page, setPage]               = useState("home");
+  const [playingGame, setPlayingGame] = useState(null);
+  const [user, setUser]               = useState(null);
+  const [token, setToken]             = useState(null);
+  const [users, setUsers]             = useState([]);
+  const [scores, setScores]           = useState([]);
+  const [motd, setMotd]               = useState("");
+  const [loading, setLoading]         = useState(false);
+
+  // Загрузить рейтинг с сервера
+  const loadScores = async () => {
+    try {
+      const res  = await fetch(`${API}/api/leaderboard`);
+      const data = await res.json();
+      // Преобразуем в формат {name, scores:{game:score}}
+      const scoresResult = await fetch(`${API}/api/leaderboard`);
+      const lb = await scoresResult.json();
+      // Загружаем очки каждого игрока
+      const allScores = [];
+      for (const player of lb) {
+        try {
+          const sr = await fetch(`${API}/api/scores/${player.id}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          });
+          const sc = await sr.json();
+          allScores.push({ name: player.username, scores: sc, id: player.id });
+        } catch { allScores.push({ name: player.username, scores: {}, id: player.id }); }
+      }
+      setScores(allScores);
+    } catch (e) { console.error('Ошибка загрузки рейтинга:', e); }
   };
-  const handleLogout = () => { setUser(null); setPage("home"); setPlayingGame(null); };
-  const handlePlayGame = (id) => { setPlayingGame(id); setPage("game"); };
-  const handleBack = () => { setPlayingGame(null); setPage("home"); };
-  const handleSubmitScore = (gameId, score) => {
-    if(!user)return;
-    setScores(prev=>{
-      const ex=prev.find(p=>p.name===user.username);
-      if(ex)return prev.map(p=>p.name===user.username?{...p,scores:{...p.scores,[gameId]:Math.max(p.scores[gameId]??0,score)}}:p);
-      return [...prev,{name:user.username,scores:{[gameId]:score}}];
-    });
-    setUsers(prev=>prev.map(u2=>u2.username===user.username?{...u2,totalGamesPlayed:(u2.totalGamesPlayed??0)+1}:u2));
+
+  // Загрузить список пользователей (для админа)
+  const loadUsers = async (tok) => {
+    try {
+      const res = await fetch(`${API}/api/admin/users`, {
+        headers: { Authorization: `Bearer ${tok || token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUsers(data.map(u => ({
+          username: u.username, role: u.role,
+          banned: u.is_banned, totalGamesPlayed: u.total_games_played,
+          id: u.id, totalScore: Number(u.total_score)
+        })));
+      }
+    } catch (e) { console.error('Ошибка загрузки пользователей:', e); }
+  };
+
+  // При старте загружаем рейтинг
+  useState(() => { loadScores(); }, []);
+
+  const handleLogin = async (u, tok) => {
+    setUser(u); setToken(tok); setPage("home");
+    await loadScores();
+    if (u.role === 'admin') await loadUsers(tok);
+  };
+
+  const handleRegister = async (u, tok) => {
+    setUser(u); setToken(tok); setPage("home");
+    await loadScores();
+  };
+
+  const handleLogout = () => {
+    setUser(null); setToken(null);
+    setPage("home"); setPlayingGame(null);
+  };
+
+  const handlePlayGame  = (id) => { setPlayingGame(id); setPage("game"); };
+  const handleBack      = ()   => { setPlayingGame(null); setPage("home"); };
+
+  const handleSubmitScore = async (gameId, score) => {
+    if (!user || !token) return;
+    try {
+      await fetch(`${API}/api/scores`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ game_id: gameId, score })
+      });
+      await loadScores();
+    } catch (e) { console.error('Ошибка сохранения счёта:', e); }
+  };
+
+  // Обновить setUsers для AdminPanel (бан/разбан/сброс)
+  const handleAdminSetUsers = async (updater) => {
+    // Оптимистичное обновление UI
+    setUsers(updater);
+  };
+
+  const handleAdminSetScores = async (updater) => {
+    setScores(updater);
+    await loadScores();
   };
 
   // If not logged in → show auth
-  if(!user) return (
+  if (!user) return (
     <>
       <GlobalStyles/>
       <div className="scanline"/>
-      <div style={{minHeight:"100vh",animation:"flicker 8s infinite"}}>
-        {/* Lang toggle on auth screen */}
-        <div style={{position:"fixed",top:14,right:18,zIndex:200}}>
+      <div style={{minHeight:"100vh", animation:"flicker 8s infinite"}}>
+        <div style={{position:"fixed", top:14, right:18, zIndex:200}}>
           <button onClick={()=>setLang(l=>l==="en"?"ru":"en")} style={{
-            padding:"6px 12px",border:"1px solid var(--border)",borderRadius:4,
-            background:"var(--bg2)",color:"var(--text)",fontFamily:"var(--font-hd)",
-            fontSize:"0.68rem",cursor:"pointer"}}>
-            {lang==="en"?"🇷🇺 RU":"🇺🇸 EN"}
-          </button>
+            padding:"6px 12px", border:"1px solid var(--border)", borderRadius:4,
+            background:"var(--bg2)", color:"var(--text)", fontFamily:"var(--font-hd)",
+            fontSize:"0.68rem", cursor:"pointer"
+          }}>{lang==="en"?"RU":"EN"}</button>
         </div>
-        <AuthPage lang={lang} users={users} onLogin={handleLogin} onRegister={handleRegister}/>
+        <AuthPage lang={lang} onLogin={handleLogin} onRegister={handleRegister}/>
       </div>
     </>
   );
@@ -3300,15 +3419,19 @@ export default function App() {
     <>
       <GlobalStyles/>
       <div className="scanline"/>
-      <div style={{minHeight:"100vh",animation:"flicker 8s infinite"}}>
-        <Header page={page} setPage={navSetPage} user={user} lang={lang} setLang={setLang}
-          onLogout={handleLogout} motd={motd}/>
+      <div style={{minHeight:"100vh", animation:"flicker 8s infinite"}}>
+        <Header page={page} setPage={navSetPage} user={user} lang={lang}
+          setLang={setLang} onLogout={handleLogout} motd={motd}/>
         {page==="home"        && <HomePage lang={lang} user={user} scores={scores} onPlayGame={handlePlayGame}/>}
         {page==="leaderboard" && <LeaderboardPage lang={lang} scores={scores} user={user}/>}
-        {page==="profile"     && <ProfilePage lang={lang} user={user} users={users} setUsers={setUsers} scores={scores} onPlayGame={handlePlayGame}/>}
+        {page==="profile"     && <ProfilePage lang={lang} user={user} users={users}
+          setUsers={setUsers} scores={scores} onPlayGame={handlePlayGame}
+          token={token} api={API}/>}
         {page==="admin" && user?.role==="admin" && (
-          <AdminPanel lang={lang} users={users} setUsers={setUsers}
-            scores={scores} setScores={setScores} motd={motd} setMotd={setMotd}/>
+          <AdminPanel lang={lang} users={users} setUsers={handleAdminSetUsers}
+            scores={scores} setScores={handleAdminSetScores}
+            motd={motd} setMotd={setMotd} token={token} api={API}
+            reloadUsers={()=>loadUsers(token)}/>
         )}
         {page==="game" && playingGame && (
           <GameWrapper gameId={playingGame} user={user} lang={lang}
