@@ -147,7 +147,24 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
 // GET /api/leaderboard — общий рейтинг
 app.get('/api/leaderboard', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM leaderboard_view LIMIT 50');
+    // Используем прямой запрос вместо view чтобы включить всех пользователей
+    const result = await pool.query(`
+      SELECT
+        u.id,
+        u.username,
+        u.avatar_id,
+        u.avatar_color,
+        u.role,
+        COALESCE(SUM(s.best_score), 0)::int AS total_score,
+        COUNT(DISTINCT s.game_id)::int       AS games_with_score,
+        u.total_games_played
+      FROM users u
+      LEFT JOIN scores s ON s.user_id = u.id
+      WHERE u.is_banned = FALSE
+      GROUP BY u.id, u.username, u.avatar_id, u.avatar_color, u.role, u.total_games_played
+      ORDER BY total_score DESC
+      LIMIT 50
+    `);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: 'Ошибка сервера' });

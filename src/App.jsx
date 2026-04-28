@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import ReactDOM from "react-dom";
 
 // ═══════════════════════════════════════════════════════════════
 // TRANSLATIONS
@@ -1279,7 +1280,22 @@ function AuthPage({lang, onLogin, onRegister}) {
       const data = await res.json();
       if (!res.ok) { setError(data.error || t.error.badLogin); return; }
       onLogin(data.user, data.token);
-    } catch { setError(lang==="ru"?"Сервер недоступен. Запусти backend.":"Server unavailable. Start backend."); }
+    } catch {
+      // Демо-режим — бэкенд недоступен, входим локально
+      const demoUsers = [
+        { username:'ADMIN', password:'admin2024', role:'admin' },
+        { username:'CYBER_ACE', password:'ace123', role:'user' },
+        { username:'NEON_WOLF', password:'wolf456', role:'user' },
+        { username:'VOID_ZERO', password:'void789', role:'user' },
+        { username:'GRID_RUNNER', password:'grid999', role:'user' },
+      ];
+      const found = demoUsers.find(u => u.username === username.toUpperCase() && u.password === password);
+      if (found) {
+        onLogin({ id: 1, username: found.username, role: found.role, bio:'', avatar_id:'robot', avatar_color:0, xp:0, total_games_played:0 }, null);
+      } else {
+        setError(lang==="ru"?"Неверный логин или пароль (демо-режим)":"Wrong credentials (demo mode)");
+      }
+    }
     finally { setLoading(false); }
   };
 
@@ -1299,7 +1315,10 @@ function AuthPage({lang, onLogin, onRegister}) {
       const data = await res.json();
       if (!res.ok) { setError(data.error || t.error.takenName); return; }
       onRegister(data.user, data.token);
-    } catch { setError(lang==="ru"?"Сервер недоступен. Запусти backend.":"Server unavailable. Start backend."); }
+    } catch {
+      // Демо-режим — регистрируем локально
+      onRegister({ id: Date.now(), username: username.toUpperCase(), role:'user', bio:'', avatar_id:'robot', avatar_color:0, xp:0, total_games_played:0 }, null);
+    }
     finally { setLoading(false); }
   };
 
@@ -2031,11 +2050,29 @@ function SnakeGame({onEnd, active, color, lang}) {
 
     // ── main draw ────────────────────────────────────────────────
     const draw = (s, ts) => {
-      // Background + grid dots
-      ctx.fillStyle="#060612"; ctx.fillRect(0,0,W,H);
-      ctx.fillStyle="rgba(255,255,255,0.025)";
-      for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
-        ctx.fillRect(c*CELL+CELL/2-1, r*CELL+CELL/2-1, 2, 2);
+      // Green grass background
+      ctx.fillStyle="#1a3a1a"; ctx.fillRect(0,0,W,H);
+
+      // Grass grid cells — alternating light/dark green squares
+      for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) {
+        ctx.fillStyle = (r+c)%2===0 ? "#1e421e" : "#1a3a1a";
+        ctx.fillRect(c*CELL, r*CELL, CELL, CELL);
+      }
+
+      // Subtle grid lines
+      ctx.strokeStyle="rgba(0,0,0,0.15)"; ctx.lineWidth=0.5;
+      for(let r=0;r<=ROWS;r++){ctx.beginPath();ctx.moveTo(0,r*CELL);ctx.lineTo(W,r*CELL);ctx.stroke();}
+      for(let c=0;c<=COLS;c++){ctx.beginPath();ctx.moveTo(c*CELL,0);ctx.lineTo(c*CELL,H);ctx.stroke();}
+
+      // Tiny grass tufts on empty cells
+      ctx.fillStyle="rgba(0,180,0,0.12)";
+      for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) {
+        const occupied = s.snake.some(seg=>seg.x===c&&seg.y===r);
+        if(!occupied && (c*7+r*13)%5===0) {
+          const gx=c*CELL+CELL/2, gy=r*CELL+CELL-3;
+          ctx.fillRect(gx-3,gy-5,2,5); ctx.fillRect(gx,gy-7,2,7); ctx.fillRect(gx+3,gy-4,2,4);
+        }
+      }
 
       // Food
       drawFood(s.food, ts);
@@ -2149,7 +2186,7 @@ function FlappyGame({onEnd, active, color, lang}) {
   useEffect(() => { onEndRef.current = onEnd; },  [onEnd]);
 
   const COL = resolveCSSColor(color);   // real hex color for canvas
-  const W=480, H=360, PW=50, GAP=130, SPEED=2.8, GRAVITY=0.42, JUMP=-8;
+  const W=480, H=360, PW=52, GAP=160, SPEED=2.2, GRAVITY=0.32, JUMP=-7;
 
   // ── init / restart game state ──
   const newGame = () => ({
@@ -2304,22 +2341,22 @@ function FlappyGame({onEnd, active, color, lang}) {
         // Move pipes
         g.pipes.forEach(p => { p.x -= SPEED; });
 
-        // Spawn new pipe when last one moved far enough
+        // Spawn new pipe — увеличил расстояние между трубами
         const lastPipe = g.pipes[g.pipes.length-1];
-        if (!lastPipe || lastPipe.x < W - 220) {
-          const top = 60 + Math.random() * (H - GAP - 120);
+        if (!lastPipe || lastPipe.x < W - 280) {
+          const top = 70 + Math.random() * (H - GAP - 140);
           g.pipes.push({ x: W+20, top, bottom: top+GAP, scored: false });
         }
 
         // Remove off-screen pipes
         g.pipes = g.pipes.filter(p => p.x > -PW-20);
 
-        // Score + collision
+        // Score + collision — уменьшил хитбокс птицы для прощения
         for (const p of g.pipes) {
           if (!p.scored && p.x + PW < g.bird.x) { p.scored=true; g.score++; }
-          const bx=g.bird.x, by=g.bird.y, br=10;
-          if (bx+br > p.x && bx-br < p.x+PW) {
-            if (by-br < p.top || by+br > p.bottom) { g.over=true; break; }
+          const bx=g.bird.x, by=g.bird.y, br=8; // было 10
+          if (bx+br > p.x+4 && bx-br < p.x+PW-4) {
+            if (by-br < p.top+4 || by+br > p.bottom-4) { g.over=true; break; }
           }
         }
 
@@ -2470,17 +2507,19 @@ function PongGame({onEnd, active, color, lang}) {
 
   const W=480, H=360;
   const COL = resolveCSSColor(color);
+  const MUTED = '#8888aa';
   const PADDLE_W=90, PADDLE_H=12, BALL_R=9;
 
   const initState = () => ({
-    ball:    { x:W/2, y:H/2, vx: 3.5*(Math.random()>0.5?1:-1), vy:-3.5 },
+    ball:    { x:W/2, y:H/2, vx: 5*(Math.random()>0.5?1:-1), vy:-5 },
     paddle:  { x:W/2-PADDLE_W/2, y:H-40 },
     score:   0,
     lives:   3,
     started: false,
     over:    false,
-    combo:   0,       // consecutive hits
-    particles: [],    // hit particles
+    combo:   0,
+    particles: [],
+    trail: [],        // мяч оставляет след
     flashTimer: 0,
   });
 
@@ -2579,6 +2618,11 @@ function PongGame({onEnd, active, color, lang}) {
         const b = s.ball;
         const p = s.paddle;
 
+        // Track trail — lightweight
+        if (s.trail.length >= 8) s.trail.shift();
+        s.trail.push({ x: b.x, y: b.y, life: 1 });
+        s.trail.forEach(t => { t.life -= 0.12; });
+
         // Move ball
         b.x += b.vx; b.y += b.vy;
 
@@ -2595,10 +2639,10 @@ function PongGame({onEnd, active, color, lang}) {
           b.y  = p.y - BALL_R;
           // Angle based on hit position
           const rel = (b.x - (p.x + PADDLE_W/2)) / (PADDLE_W/2);
-          b.vx = rel * 5;
-          // Speed up every 5 hits
+          b.vx = rel * 6;
+          // Speed up every 3 hits (was every 5, now faster)
           s.combo++;
-          const spd = 3.5 + Math.floor(s.combo/5)*0.4;
+          const spd = 5 + Math.floor(s.combo/3)*0.6;
           const mag = Math.hypot(b.vx, b.vy);
           b.vx = b.vx/mag * spd; b.vy = -Math.abs(b.vy/mag * spd);
           s.score += 10 + s.combo;
@@ -2614,7 +2658,7 @@ function PongGame({onEnd, active, color, lang}) {
           if (s.lives<=0) { s.over=true; onEndRef.current(s.score); }
           else {
             b.x=W/2; b.y=H/2;
-            b.vx=3.5*(Math.random()>0.5?1:-1); b.vy=-3.5;
+            b.vx=5*(Math.random()>0.5?1:-1); b.vy=-5;
           }
         }
 
@@ -2627,12 +2671,22 @@ function PongGame({onEnd, active, color, lang}) {
       // ── draw ──
       ctx.fillStyle="#060612"; ctx.fillRect(0,0,W,H);
 
-      // Grid dots
-      ctx.fillStyle="rgba(255,255,255,0.025)";
-      for(let r=0;r<H;r+=24) for(let c=0;c<W;c+=24)
-        ctx.fillRect(c,r,1.5,1.5);
+      // Grid dots — lightweight
+      ctx.fillStyle="rgba(255,255,255,0.02)";
+      for(let r=0;r<H;r+=32) for(let c=0;c<W;c+=32)
+        ctx.fillRect(c,r,1,1);
 
       drawWalls();
+
+      // Draw ball trail
+      s.trail.forEach((t, i) => {
+        const alpha = t.life * 0.4;
+        const radius = BALL_R * t.life * 0.7;
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = COL;
+        ctx.beginPath(); ctx.arc(t.x, t.y, radius, 0, Math.PI*2); ctx.fill();
+      });
+      ctx.globalAlpha = 1;
 
       // Particles
       s.particles.forEach(pt=>{
@@ -2652,11 +2706,27 @@ function PongGame({onEnd, active, color, lang}) {
       ctx.fillText(s.score, W/2, 28);
       ctx.shadowBlur=0; ctx.textAlign="left";
 
+      // Speed indicator bar
+      const spd = Math.hypot(s.ball.vx, s.ball.vy);
+      const maxSpd = 14;
+      const spdPct = Math.min(spd / maxSpd, 1);
+      const barW = 80, barX = W - barW - 8, barY = 8;
+      ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      ctx.fillRect(barX, barY, barW, 6);
+      const spdColor = spdPct < 0.5 ? COL : spdPct < 0.8 ? '#ffe500' : '#ff3355';
+      ctx.fillStyle = spdColor;
+      ctx.shadowColor = spdColor; ctx.shadowBlur = 6;
+      ctx.fillRect(barX, barY, barW * spdPct, 6);
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = MUTED || '#8888aa'; ctx.font = "8px 'Orbitron'";
+      ctx.fillText('SPD', barX, barY + 16);
+
       // Combo
       if (s.combo >= 3) {
         ctx.fillStyle=COL; ctx.font="bold 11px 'Orbitron'"; ctx.textAlign="center";
+        ctx.shadowColor=COL; ctx.shadowBlur=8;
         ctx.fillText(`COMBO x${s.combo}`, W/2, 46);
-        ctx.textAlign="left";
+        ctx.shadowBlur=0; ctx.textAlign="left";
       }
 
       if (!s.started) {
@@ -2699,7 +2769,14 @@ function TetrisGame({onEnd,active,color,lang}) {
   const canvasRef=useRef(null),stateRef=useRef(null),animRef=useRef(null),dropRef=useRef(0);
   const COLS=10,ROWS=20,CELL=24,W=COLS*CELL,H=ROWS*CELL;
   const rp=()=>{const k=TK[Math.floor(Math.random()*TK.length)],t=TETROS[k];return{cells:t.cells.map(([x,y])=>[x+3,y]),color:t.color,key:k};};
-  const rot=cells=>cells.map(([x,y])=>[y,-x]).map(([x,y])=>{const mn=Math.min(...cells.map(c=>c[1]));return[x-mn,y+Math.max(...cells.map(c=>c[0]))];});
+  const rot=cells=>{
+    // Find bounding box center
+    const xs=cells.map(([x])=>x), ys=cells.map(([,y])=>y);
+    const cx=Math.floor((Math.min(...xs)+Math.max(...xs))/2);
+    const cy=Math.floor((Math.min(...ys)+Math.max(...ys))/2);
+    // Rotate 90° clockwise around center: (x,y) → (cy-(y-cy)+cx, (x-cx)+cy) = (-y+cx+cy, x-cx+cy)
+    return cells.map(([x,y])=>[-(y-cy)+cx, (x-cx)+cy]);
+  };
   const vld=(cells,board)=>cells.every(([x,y])=>x>=0&&x<COLS&&y<ROWS&&(y<0||!board[y]?.[x]));
   useEffect(()=>{
     const is=()=>({board:Array.from({length:ROWS},()=>Array(COLS).fill(null)),current:rp(),next:rp(),score:0,lines:0,level:1,started:false,dead:false});
@@ -2753,12 +2830,49 @@ function TetrisGame({onEnd,active,color,lang}) {
       animRef.current=requestAnimationFrame(tick);
     };
     const onKey=e=>{
-      const s=stateRef.current;if(!s.started)s.started=true;if(s.dead)return;
-      if(e.key==="ArrowLeft"){const m=s.current.cells.map(([x,y])=>[x-1,y]);if(vld(m,s.board))s.current.cells=m;}
-      else if(e.key==="ArrowRight"){const m=s.current.cells.map(([x,y])=>[x+1,y]);if(vld(m,s.board))s.current.cells=m;}
-      else if(e.key==="ArrowDown"){const m=s.current.cells.map(([x,y])=>[x,y+1]);if(vld(m,s.board)){s.current.cells=m;s.score+=1;}}
-      else if(e.key==="ArrowUp"){const r=rot(s.current.cells);if(vld(r,s.board))s.current.cells=r;}
-      else if(e.key===" "){while(vld(s.current.cells.map(([x,y])=>[x,y+1]),s.board)){s.current.cells=s.current.cells.map(([x,y])=>[x,y+1]);s.score+=2;}lock(s);e.preventDefault();}
+      const s=stateRef.current;
+      if(!s.started){ s.started=true; return; }
+      if(s.dead) return;
+      if(e.key==="ArrowLeft"){
+        e.preventDefault();
+        const m=s.current.cells.map(([x,y])=>[x-1,y]);
+        if(vld(m,s.board)) s.current.cells=m;
+      }
+      else if(e.key==="ArrowRight"){
+        e.preventDefault();
+        const m=s.current.cells.map(([x,y])=>[x+1,y]);
+        if(vld(m,s.board)) s.current.cells=m;
+      }
+      else if(e.key==="ArrowDown"){
+        e.preventDefault();
+        const m=s.current.cells.map(([x,y])=>[x,y+1]);
+        if(vld(m,s.board)){ s.current.cells=m; s.score+=1; }
+        else { lock(s); }
+      }
+      else if(e.key==="ArrowUp" || e.key==="x" || e.key==="X"){
+        e.preventDefault();
+        // Rotate clockwise with wall kick
+        const r=rot(s.current.cells);
+        if(vld(r,s.board)){ s.current.cells=r; return; }
+        // Wall kick — try shifting left/right
+        const rL=r.map(([x,y])=>[x-1,y]);
+        if(vld(rL,s.board)){ s.current.cells=rL; return; }
+        const rR=r.map(([x,y])=>[x+1,y]);
+        if(vld(rR,s.board)){ s.current.cells=rR; return; }
+        const rL2=r.map(([x,y])=>[x-2,y]);
+        if(vld(rL2,s.board)){ s.current.cells=rL2; return; }
+        const rR2=r.map(([x,y])=>[x+2,y]);
+        if(vld(rR2,s.board)){ s.current.cells=rR2; return; }
+      }
+      else if(e.key===" "||e.key==="Enter"){
+        e.preventDefault();
+        // Hard drop
+        while(vld(s.current.cells.map(([x,y])=>[x,y+1]),s.board)){
+          s.current.cells=s.current.cells.map(([x,y])=>[x,y+1]);
+          s.score+=2;
+        }
+        lock(s);
+      }
     };
     window.addEventListener("keydown",onKey);
     animRef.current=requestAnimationFrame(tick);
@@ -2817,8 +2931,13 @@ function TetrisGame({onEnd,active,color,lang}) {
     if (s.dead) return;
     if (action==="left")  { const m=s.current.cells.map(([x,y])=>[x-1,y]); if(vld(m,s.board))s.current.cells=m; }
     if (action==="right") { const m=s.current.cells.map(([x,y])=>[x+1,y]); if(vld(m,s.board))s.current.cells=m; }
-    if (action==="down")  { const m=s.current.cells.map(([x,y])=>[x,y+1]); if(vld(m,s.board)){s.current.cells=m;s.score+=1;} }
-    if (action==="rot")   { const r=rot(s.current.cells); if(vld(r,s.board))s.current.cells=r; }
+    if (action==="down")  { const m=s.current.cells.map(([x,y])=>[x,y+1]); if(vld(m,s.board)){s.current.cells=m;s.score+=1;}else{lock(s);} }
+    if (action==="rot")   {
+      const r=rot(s.current.cells);
+      if(vld(r,s.board)){s.current.cells=r;return;}
+      const rL=r.map(([x,y])=>[x-1,y]); if(vld(rL,s.board)){s.current.cells=rL;return;}
+      const rR=r.map(([x,y])=>[x+1,y]); if(vld(rR,s.board)){s.current.cells=rR;return;}
+    }
     if (action==="drop")  { while(vld(s.current.cells.map(([x,y])=>[x,y+1]),s.board)){s.current.cells=s.current.cells.map(([x,y])=>[x,y+1]);s.score+=2;} lock(s); }
   };
 
@@ -2957,7 +3076,7 @@ function ProfilePage({ lang, user, users, scores, setUsers, onPlayGame, token, a
         <div style={{ padding: "32px 28px", display:"flex", alignItems:"center", gap:28, flexWrap:"wrap", position:"relative" }}>
 
           {/* Avatar */}
-          <div style={{ position:"relative", flexShrink:0 }}>
+          <div style={{ position:"relative", flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", gap:8 }}>
             <div onClick={()=>setShowAvatarPicker(v=>!v)} style={{
               width:90, height:90, borderRadius:"50%", cursor:"pointer",
               background:`linear-gradient(135deg, ${ac1}, ${ac2})`,
@@ -2969,54 +3088,77 @@ function ProfilePage({ lang, user, users, scores, setUsers, onPlayGame, token, a
               onMouseEnter={e=>{ e.currentTarget.style.transform="scale(1.08)"; e.currentTarget.style.boxShadow=`0 0 36px ${ac1}80`; }}
               onMouseLeave={e=>{ e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.boxShadow=`0 0 24px ${ac1}60`; }}
             ><PixelIconAnimated id={avatar} size={52} glow /></div>
+
+            {/* Edit badge */}
             <div style={{
-              position:"absolute", bottom:2, right:2,
+              position:"absolute", bottom:28, right:2,
               width:22, height:22, borderRadius:"50%",
               background: ac1, border:"2px solid var(--bg)",
               display:"flex", alignItems:"center", justifyContent:"center",
               fontSize:"0.6rem", color:"#000", fontWeight:900, fontFamily:"var(--font-hd)",
-              boxShadow:`0 0 8px ${ac1}`
+              boxShadow:`0 0 8px ${ac1}`, pointerEvents:"none"
             }}>✎</div>
 
-            {/* Avatar picker popup */}
-            {showAvatarPicker && (
+            {/* ВЫБРАТЬ АВАТАР button */}
+            <button onClick={()=>setShowAvatarPicker(v=>!v)} style={{
+              padding:"4px 10px", background:`${ac1}20`, border:`1px solid ${ac1}60`,
+              borderRadius:4, color:ac1, fontFamily:"var(--font-hd)", fontSize:"0.55rem",
+              cursor:"pointer", letterSpacing:"0.08em", whiteSpace:"nowrap",
+              touchAction:"manipulation", WebkitTapHighlightColor:"transparent"
+            }}>{t.avatarTitle || "ВЫБРАТЬ АВАТАР"}</button>
+
+            {/* Avatar picker — portal renders in document.body, bypasses overflow:hidden */}
+            {showAvatarPicker && ReactDOM.createPortal(
               <div style={{
-                position:"absolute", top:100, left:0, zIndex:50,
-                background:"var(--bg2)", border:`1px solid ${ac1}60`,
-                borderRadius:10, padding:14, width:260,
-                boxShadow:`0 8px 32px rgba(0,0,0,0.6), 0 0 20px ${ac1}30`,
-                animation:"pop-in 0.2s both"
+                position:"fixed", top:0, left:0, right:0, bottom:0,
+                zIndex:99999,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                padding:"20px", boxSizing:"border-box"
               }}>
-                <div style={{ fontFamily:"var(--font-hd)", fontSize:"0.6rem", color:ac1, letterSpacing:"0.15em", marginBottom:10 }}>
-                  {t.avatarTitle}
+                <div onClick={()=>setShowAvatarPicker(false)} style={{
+                  position:"absolute", inset:0, background:"rgba(0,0,0,0.75)"
+                }}/>
+                <div style={{
+                  position:"relative", background:"#0d0d24",
+                  border:`2px solid ${ac1}`, borderRadius:12, padding:20,
+                  width:"100%", maxWidth:340, maxHeight:"85vh", overflowY:"auto",
+                  boxShadow:`0 0 40px ${ac1}80`, zIndex:1
+                }}>
+                  <div style={{ fontFamily:"var(--font-hd)", fontSize:"0.65rem", color:ac1, letterSpacing:"0.15em", marginBottom:12, textAlign:"center" }}>
+                    {t.avatarTitle}
+                  </div>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8, marginBottom:14 }}>
+                    {AVATAR_PIXEL_IDS.map(pid=>(
+                      <button key={pid} onClick={()=>{ setAvatar(pid); saveProfile(undefined,pid,undefined); }}
+                        style={{ padding:"10px 4px", borderRadius:8, cursor:"pointer",
+                          display:"flex", alignItems:"center", justifyContent:"center",
+                          background: avatar===pid ? `${ac1}30` : "#12122a",
+                          border:`2px solid ${avatar===pid ? ac1 : "#2a2a4a"}`,
+                          transition:"all 0.15s", touchAction:"manipulation" }}>
+                        <PixelIcon id={pid} size={32} color={avatar===pid ? ac1 : undefined} />
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ fontFamily:"var(--font-hd)", fontSize:"0.58rem", color:"#8888aa", marginBottom:8, letterSpacing:"0.1em" }}>ЦВЕТ / COLOR</div>
+                  <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:14 }}>
+                    {AVATAR_COLORS.map(([c1],i)=>(
+                      <button key={i} onClick={()=>{ setAvatarColor(i); saveProfile(undefined,undefined,i); }}
+                        style={{ width:32, height:32, borderRadius:"50%", cursor:"pointer",
+                          background:c1, border:`3px solid ${avatarColor===i?"#fff":"transparent"}`,
+                          boxShadow: avatarColor===i ? `0 0 10px ${c1}` : "none",
+                          touchAction:"manipulation" }}/>
+                    ))}
+                  </div>
+                  <button onClick={()=>setShowAvatarPicker(false)}
+                    style={{ width:"100%", padding:"10px", background:`${ac1}20`,
+                      border:`1px solid ${ac1}`, borderRadius:6, color:ac1,
+                      fontFamily:"var(--font-hd)", fontSize:"0.65rem", cursor:"pointer",
+                      touchAction:"manipulation", letterSpacing:"0.05em" }}>
+                    ✓ {lang==="ru"?"ГОТОВО":"DONE"}
+                  </button>
                 </div>
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6, marginBottom:12 }}>
-                  {AVATAR_PIXEL_IDS.map(pid=>(
-                    <button key={pid} onClick={()=>{ setAvatar(pid); saveProfile(undefined,pid,undefined); }}
-                      style={{ padding:"8px 4px", borderRadius:6, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
-                        background: avatar===pid ? `${ac1}30` : "var(--bg3)",
-                        border:`1px solid ${avatar===pid ? ac1 : "var(--border)"}`,
-                        transition:"all 0.15s" }}>
-                      <PixelIcon id={pid} size={28} />
-                    </button>
-                  ))}
-                </div>
-                <div style={{ fontFamily:"var(--font-hd)", fontSize:"0.58rem", color:"var(--muted)", marginBottom:6, letterSpacing:"0.1em" }}>COLOR</div>
-                <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                  {AVATAR_COLORS.map(([c1],i)=>(
-                    <button key={i} onClick={()=>{ setAvatarColor(i); saveProfile(undefined,undefined,i); }}
-                      style={{ width:22, height:22, borderRadius:"50%", cursor:"pointer",
-                        background:c1, border:`2px solid ${avatarColor===i?"#fff":"transparent"}`,
-                        boxShadow: avatarColor===i ? `0 0 8px ${c1}` : "none" }}/>
-                  ))}
-                </div>
-                <button onClick={()=>setShowAvatarPicker(false)}
-                  style={{ marginTop:10, width:"100%", padding:"6px", background:"var(--bg3)",
-                    border:"1px solid var(--border)", borderRadius:4, color:"var(--muted)",
-                    fontFamily:"var(--font-hd)", fontSize:"0.62rem", cursor:"pointer" }}>
-                  ✕ {lang==="ru"?"ЗАКРЫТЬ":"CLOSE"}
-                </button>
-              </div>
+              </div>,
+              document.body
             )}
           </div>
 
@@ -3311,24 +3453,26 @@ export default function App() {
   const [loading, setLoading]         = useState(false);
 
   // Загрузить рейтинг с сервера
-  const loadScores = async () => {
+  const loadScores = async (tok) => {
     try {
-      const res  = await fetch(`${API}/api/leaderboard`);
-      const data = await res.json();
-      // Преобразуем в формат {name, scores:{game:score}}
-      const scoresResult = await fetch(`${API}/api/leaderboard`);
-      const lb = await scoresResult.json();
+      const res = await fetch(`${API}/api/leaderboard`);
+      if (!res.ok) return;
+      const lb = await res.json();
+
       // Загружаем очки каждого игрока
-      const allScores = [];
-      for (const player of lb) {
+      const usedToken = tok || token;
+      const allScores = await Promise.all(lb.map(async player => {
         try {
           const sr = await fetch(`${API}/api/scores/${player.id}`, {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
+            headers: usedToken ? { Authorization: `Bearer ${usedToken}` } : {}
           });
-          const sc = await sr.json();
-          allScores.push({ name: player.username, scores: sc, id: player.id });
-        } catch { allScores.push({ name: player.username, scores: {}, id: player.id }); }
-      }
+          const sc = sr.ok ? await sr.json() : {};
+          return { name: player.username, scores: sc, id: player.id,
+                   totalScore: Number(player.total_score || 0) };
+        } catch {
+          return { name: player.username, scores: {}, id: player.id, totalScore: 0 };
+        }
+      }));
       setScores(allScores);
     } catch (e) { console.error('Ошибка загрузки рейтинга:', e); }
   };
@@ -3351,48 +3495,62 @@ export default function App() {
   };
 
   // При старте загружаем рейтинг
-  useState(() => { loadScores(); }, []);
+  useEffect(() => { loadScores(); }, []);
 
   const handleLogin = async (u, tok) => {
     setUser(u); setToken(tok); setPage("home");
-    await loadScores();
+    await loadScores(tok);
     if (u.role === 'admin') await loadUsers(tok);
   };
 
   const handleRegister = async (u, tok) => {
     setUser(u); setToken(tok); setPage("home");
-    await loadScores();
+    await loadScores(tok);
   };
 
   const handleLogout = () => {
     setUser(null); setToken(null);
     setPage("home"); setPlayingGame(null);
+    loadScores();
   };
 
   const handlePlayGame  = (id) => { setPlayingGame(id); setPage("game"); };
   const handleBack      = ()   => { setPlayingGame(null); setPage("home"); };
 
   const handleSubmitScore = async (gameId, score) => {
-    if (!user || !token) return;
+    if (!user) return;
+    if (!token) {
+      // Демо-режим — сохраняем локально в scores
+      setScores(prev => {
+        const existing = prev.find(s => s.name === user.username);
+        if (existing) {
+          return prev.map(s => s.name === user.username
+            ? { ...s, scores: { ...s.scores, [gameId]: Math.max(s.scores[gameId]||0, score) } }
+            : s);
+        }
+        return [...prev, { name: user.username, scores: { [gameId]: score }, id: user.id, totalScore: score }];
+      });
+      return;
+    }
     try {
-      await fetch(`${API}/api/scores`, {
+      const res = await fetch(`${API}/api/scores`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ game_id: gameId, score })
       });
-      await loadScores();
+      if (!res.ok) { console.error('Ошибка сохранения:', await res.text()); return; }
+      await loadScores(token);
     } catch (e) { console.error('Ошибка сохранения счёта:', e); }
   };
 
   // Обновить setUsers для AdminPanel (бан/разбан/сброс)
   const handleAdminSetUsers = async (updater) => {
-    // Оптимистичное обновление UI
     setUsers(updater);
   };
 
   const handleAdminSetScores = async (updater) => {
     setScores(updater);
-    await loadScores();
+    await loadScores(token);
   };
 
   // If not logged in → show auth

@@ -1,9 +1,4 @@
--- ═══════════════════════════════════════════════════════════════
--- ARCADE VAULT — Database Schema
--- PostgreSQL 15+
--- ═══════════════════════════════════════════════════════════════
 
--- Удалить БД если существует (для чистой установки)
 -- DROP DATABASE IF EXISTS arcade_vault;
 -- CREATE DATABASE arcade_vault;
 
