@@ -19,11 +19,9 @@
 
 ## 🚀 Live Demo
 
-**[▶ Играть онлайн / Play Online](https://effortless-travesseiro-756908.netlify.app/)**
+**[▶ Играть онлайн / Play Online](https://Feride07.github.io/arcade-vault/)**
 
-> ⚠️ Демо-версия работает без backend. Для полной версии с PostgreSQL — см. инструкцию по установке.
 
-</div>
 
 ---
 
