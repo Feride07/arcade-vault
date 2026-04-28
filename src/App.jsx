@@ -3003,7 +3003,7 @@ function computeAchievements(scores, userData, allScores) {
   };
 }
 
-function ProfilePage({ lang, user, users, scores, setUsers, onPlayGame, token, api }) {
+function ProfilePage({ lang, user, users, scores, setUsers, onPlayGame, token, api, setUser }) {
   const t = T[lang].profile;
   const tp = T[lang];
   const userData = users.find(u => u.username === user.username);
@@ -3027,12 +3027,33 @@ function ProfilePage({ lang, user, users, scores, setUsers, onPlayGame, token, a
   // Local editable state
   const [bio, setBio] = useState(userData?.bio ?? "");
   const [editingBio, setEditingBio] = useState(false);
-  const [avatar, setAvatar] = useState(userData?.avatar ?? "robot");
-  const [avatarColor, setAvatarColor] = useState(userData?.avatarColor ?? 0);
+
+  // Берём аватар из localStorage (демо) или из актуальных данных пользователя
+  const savedAvatar = localStorage.getItem(`avatar_${user?.username}`);
+  const savedColor  = localStorage.getItem(`avatarColor_${user?.username}`);
+
+  const initAvatar = savedAvatar
+    ?? userData?.avatar_id
+    ?? userData?.avatar
+    ?? "robot";
+
+  const initColor = savedColor
+    ? Number(savedColor)
+    : (userData?.avatar_color ?? userData?.avatarColor ?? 0);
+
+  const [avatar, setAvatar]           = useState(initAvatar);
+  const [avatarColor, setAvatarColor] = useState(initColor);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [tab, setTab] = useState("stats");
 
   const saveProfile = async (newBio, newAvatar, newAvatarColor) => {
+    // Сохраняем в localStorage для демо-режима
+    if (newAvatar !== undefined && newAvatar !== null) {
+      localStorage.setItem(`avatar_${user?.username}`, newAvatar);
+    }
+    if (newAvatarColor !== undefined && newAvatarColor !== null) {
+      localStorage.setItem(`avatarColor_${user?.username}`, String(newAvatarColor));
+    }
     try {
       await fetch(`${api || API}/api/profile`, {
         method: 'PATCH',
@@ -3043,12 +3064,24 @@ function ProfilePage({ lang, user, users, scores, setUsers, onPlayGame, token, a
           avatar_color: newAvatarColor  ?? avatarColor,
         })
       });
-    } catch(e) { console.error(e); }
+    } catch(e) { /* демо-режим — игнорируем */ }
     setUsers(prev => prev.map(u =>
       u.username === user.username
-        ? { ...u, bio: newBio ?? bio, avatar: newAvatar ?? avatar, avatarColor: newAvatarColor ?? avatarColor }
+        ? { ...u,
+            bio: newBio ?? bio,
+            avatar: newAvatar ?? avatar,
+            avatar_id: newAvatar ?? avatar,
+            avatarColor: newAvatarColor ?? avatarColor,
+            avatar_color: newAvatarColor ?? avatarColor,
+          }
         : u
     ));
+    // Обновляем также глобальный объект user
+    if (setUser) setUser(prev => ({
+      ...prev,
+      avatar_id: newAvatar ?? avatar,
+      avatar_color: newAvatarColor ?? avatarColor,
+    }));
   };
 
   const [ac1, ac2] = AVATAR_COLORS[avatarColor % AVATAR_COLORS.length];
@@ -3584,7 +3617,7 @@ export default function App() {
         {page==="leaderboard" && <LeaderboardPage lang={lang} scores={scores} user={user}/>}
         {page==="profile"     && <ProfilePage lang={lang} user={user} users={users}
           setUsers={setUsers} scores={scores} onPlayGame={handlePlayGame}
-          token={token} api={API}/>}
+          token={token} api={API} setUser={setUser}/>}
         {page==="admin" && user?.role==="admin" && (
           <AdminPanel lang={lang} users={users} setUsers={handleAdminSetUsers}
             scores={scores} setScores={handleAdminSetScores}
